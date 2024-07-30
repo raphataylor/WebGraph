@@ -4,6 +4,9 @@
     "version": "1.0",
     "description": "A Chrome extension for managing tabs with a graph",
     "action": {
-      "default_popup": "popup.html"
-    }
+    "default_popup": "popup.html"
+    },
+    "permissions": [
+    "activeTab"
+    ]
   }

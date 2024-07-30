@@ -1,12 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Graph Tab Manager Popup</title>
-    <link rel="stylesheet" type="text/css" href="popup.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Tab Manager</title>
+    <style>
+        body, html {
+            width: 400px;
+            height: 400px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        .node {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .link {
+            stroke: #999;
+            stroke-opacity: .8;
+        }
+        svg {
+            cursor: default;
+        }
+        svg:active {
+            cursor: grabbing;
+        }
+    </style>
 </head>
 <body>
-    <h1>Graph Tab Manger</h1>
-    <p>Hello WOrld!</p>
+    <div id="graph"></div>
+    <script src="d3.v5.min.js"></script>
+    <script src="cola.min.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>
