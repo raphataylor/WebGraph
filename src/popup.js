@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import GraphMarkUI from './components/GraphMarkUI';
+import WebGraphUI from './components/WebGraphUI';
 
 ReactDOM.render(
   <React.StrictMode>
-    <GraphMarkUI isPopup={true} />
+    <WebGraphUI isPopup={true} />
   </React.StrictMode>,
   document.getElementById('root')
 );

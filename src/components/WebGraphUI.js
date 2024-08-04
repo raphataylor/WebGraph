@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Search, Settings, FileJson, Image, FileText, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search, Settings, Image, Maximize2 } from 'lucide-react';
 
 const WebGraphUI = ({ isPopup }) => {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
@@ -33,46 +33,46 @@ const WebGraphUI = ({ isPopup }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <div className="bg-white shadow-sm p-4 flex justify-between items-center">
-          <button className="p-2 rounded hover:bg-gray-200">
+        {/* Graph Area */}
+        <div className="flex-1 bg-gray-200 p-4 relative">
+          {/* Floating Settings Button */}
+          <button className="absolute top-4 left-4 p-2 bg-white rounded-full shadow hover:bg-gray-100">
             <Settings size={24} />
           </button>
-          <div className="flex space-x-2">
-            {isPopup && (
-              <button className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
-                <Plus size={20} className="mr-2" /> Add Current Site
-              </button>
-            )}
-            <select className="border rounded px-2 py-1">
-              <option>Select Space</option>
-              <option>Space 1</option>
-              <option>Space 2</option>
-            </select>
-          </div>
+
+          {/* Add Current Site Button (Only in popup mode) */}
           {isPopup && (
-            <button className="p-2 rounded hover:bg-gray-200">
+            <button className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+              <Plus size={20} className="mr-2" /> Add Current Site
+            </button>
+          )}
+
+          {/* Fullscreen Button (Only in popup mode) */}
+          {isPopup && (
+            <button className="absolute top-4 right-40 p-2 bg-white rounded-full shadow hover:bg-gray-100">
               <Maximize2 size={24} />
             </button>
           )}
-        </div>
 
-        {/* Graph Area */}
-        <div className="flex-1 bg-gray-200 p-4">
           {/* Placeholder for graph visualization */}
           <div className="w-full h-full bg-white rounded shadow flex items-center justify-center">
             Graph Visualization Goes Here
           </div>
         </div>
 
-        {/* Bottom Search Bar */}
-        <div className="bg-white shadow-sm p-4">
-          <div className="flex items-center border rounded overflow-hidden">
+        {/* Bottom Search Bar and Space Selector */}
+        <div className="bg-white shadow-sm p-4 flex items-center space-x-4">
+          <div className="flex-1 flex items-center border rounded overflow-hidden">
             <input type="text" placeholder="Enter search here..." className="flex-1 px-4 py-2 focus:outline-none" />
             <button className="bg-blue-500 text-white p-2">
               <Search size={20} />
             </button>
           </div>
+          <select className="border rounded px-4 py-2">
+            <option>Select Space</option>
+            <option>Space 1</option>
+            <option>Space 2</option>
+          </select>
         </div>
       </div>
 
