@@ -1,12 +1,20 @@
 {
-    "manifest_version": 3,
-    "name": "Graph Tab Manager",
-    "version": "1.0",
-    "description": "A Chrome extension for managing tabs with a graph",
-    "action": {
-    "default_popup": "popup.html"
-    },
-    "permissions": [
-    "activeTab"
-    ]
+  "manifest_version": 3,
+  "name": "GraphMark",
+  "version": "1.0",
+  "description": "A force-directed graph-based tab manager",
+  "permissions": ["tabs", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "public/icons/icon16.png",
+      "48": "public/icons/icon48.png",
+      "128": "public/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "public/icons/icon16.png",
+    "48": "public/icons/icon48.png",
+    "128": "public/icons/icon128.png"
   }
+}
