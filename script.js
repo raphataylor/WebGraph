@@ -1,5 +1,5 @@
-var width = 960,
-    height = 500;
+var width = window.innerWidth,
+    height = window.innerHeight;
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -13,6 +13,13 @@ var svg = d3.select("#graph").append("svg")
         svg.attr("transform", d3.event.transform)
     }))
     .append("g");
+
+window.onresize = function() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+    cola.size([width, height]).resume();
+};
 
 d3.json("miserables.json", function (error, graph) {
     if (error) throw error;

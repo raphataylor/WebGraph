@@ -1,3 +1,4 @@
+/* Global styles for full-screen visualization */
 html, body {
     height: 100%;
     margin: 0;
@@ -9,30 +10,11 @@ html, body {
     height: 100%;
 }
 
+/* Specific styles for graph elements */
 .node {
     stroke: #fff;
     stroke-width: 1.5px;
 }
-
-.label-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-}
-
-.label {
-    position: absolute;
-    font-size: 10px;
-    color: #333;
-    pointer-events: none;
-}
-
-.label.highlight {
-    font-weight: bold;
-    color: #ff5722;
-}
-
 
 .link {
     stroke: #999;
@@ -44,4 +26,3 @@ html, body {
     stroke-width: 1.5px;
     opacity: 0.2;
 }
-
