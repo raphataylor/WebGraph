@@ -11,6 +11,13 @@ html, body {
 }
 
 /* Specific styles for graph elements */
+
+.root {
+    stroke: #000;
+    stroke-width: 2px;
+}
+
+
 .node {
     stroke: #fff;
     stroke-width: 1.5px;

@@ -1,3 +1,4 @@
+// global variables
 var width = window.innerWidth,
     height = window.innerHeight;
 
@@ -14,6 +15,7 @@ var svg = d3.select("#graph").append("svg")
     }))
     .append("g");
 
+// resize function
 window.onresize = function() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -21,59 +23,69 @@ window.onresize = function() {
     cola.size([width, height]).resume();
 };
 
+// load and process data
 d3.json("miserables.json", function (error, graph) {
     if (error) throw error;
 
+    // create hierarchical structure
     var groupMap = {};
+    var rootNode = {name: "Root", group: 0, isRoot: true};
+    graph.nodes.push(rootNode);
+
     graph.nodes.forEach(function (v, i) {
         var g = v.group;
         if (typeof groupMap[g] == 'undefined') {
-            groupMap[g] = [];
+            groupMap[g] = {name: "Group " + g, group: g, isGroup: true};
+            graph.nodes.push(groupMap[g]);
+            graph.links.push({source: rootNode, target: groupMap[g], value: 1});
         }
-        groupMap[g].push(i);
+        graph.links.push({source: groupMap[g], target: v, value: 1});
 
         v.width = v.height = 10;
     });
 
-    var groups = [];
-    for (var g in groupMap) {
-        groups.push({ id: g, leaves: groupMap[g] });
-    }
-    
+    // set up constraints for hierarchy
+    var constraints = [];
+    graph.nodes.forEach(function(v, i) {
+        if (v.isRoot) {
+            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 0}]});
+        } else if (v.isGroup) {
+            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 100}]});
+        } else {
+            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 200}]});
+        }
+    });
+
+    // set up cola layout
     cola
         .nodes(graph.nodes)
         .links(graph.links)
-        .groups(groups)
+        .constraints(constraints)
         .jaccardLinkLengths(40, 0.7)
         .avoidOverlaps(true)
         .start(50, 0, 50);
 
-    var group = svg.selectAll('.group')
-        .data(groups)
-        .enter().append('rect')
-        .classed('group', true)
-        .attr('rx', 5)
-        .attr('ry', 5)
-        .style("fill", function (d) { return color(d.id); })
-        .call(cola.drag);
-
+    // create links
     var link = svg.selectAll(".link")
         .data(graph.links)
         .enter().append("line")
         .attr("class", "link")
         .style("stroke-width", function (d) { return Math.sqrt(d.value); });
 
+    // create nodes
     var node = svg.selectAll(".node")
         .data(graph.nodes)
         .enter().append("circle")
-        .attr("class", "node")
-        .attr("r", 5)
-        .style("fill", function (d) { return color(d.group); })
+        .attr("class", function(d) { return d.isRoot ? "root" : d.isGroup ? "group" : "node"; })
+        .attr("r", function(d) { return d.isRoot ? 15 : d.isGroup ? 10 : 5; })
+        .style("fill", function (d) { return d.isRoot ? "#fff" : color(d.group); })
         .call(cola.drag);
 
+    // add titles to nodes
     node.append("title")
         .text(function (d) { return d.name; });
 
+    // update positions on tick
     cola.on('tick', function () {
         link.attr("x1", function (d) { return d.source.x; })
             .attr("y1", function (d) { return d.source.y; })
@@ -82,11 +94,5 @@ d3.json("miserables.json", function (error, graph) {
 
         node.attr("cx", function (d) { return d.x; })
             .attr("cy", function (d) { return d.y; });
-
-        group
-            .attr('x', function (d) { return d.bounds.x })
-            .attr('y', function (d) { return d.bounds.y })
-            .attr('width', function (d) { return d.bounds.width() })
-            .attr('height', function(d) { return d.bounds.height() });
     });
 });
