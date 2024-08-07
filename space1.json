@@ -1,53 +1,35 @@
 {
-    "spaces": [
-      {
-        "id": "space1",
-        "name": "Default Space",
-        "nodes": [
-          {
-            "id": "site1",
-            "type": "site",
-            "url": "https://example.com",
-            "title": "Example Site",
-            "favicon": "https://example.com/favicon.ico",
-            "snapshot": "data:image/png;base64,...",
-            "notes": "This is an example site.",
-            "visitCount": 10,
-            "tags": ["tag1", "tag2"],
-            "dateAccessed": "2024-08-07",
-            "color": "#FF0000"
-          },
-          {
-            "id": "tag1",
-            "type": "tag",
-            "name": "Tag 1",
-            "color": "#00FF00"
-          },
-          {
-            "id": "tag2",
-            "type": "tag",
-            "name": "Tag 2",
-            "color": "#0000FF"
-          }
-        ],
-        "links": [
-          {
-            "source": "site1",
-            "target": "tag1"
-          },
-          {
-            "source": "site1",
-            "target": "tag2"
-          }
-        ]
-      }
-    ],
-    "settings": {
-      "nodeSize": 10,
-      "linkSize": 2,
-      "forceSettings": {
-        "charge": -100,
-        "linkDistance": 50
-      }
+  "spaces": [
+    {
+      "id": "space1",
+      "name": "Default Space",
+      "nodes": [
+        { "id": "tag1", "name": "Programming", "type": "tag" },
+        { "id": "tag2", "name": "News", "type": "tag" },
+        { "id": "tag3", "name": "Technology", "type": "tag" },
+        { "id": "site1", "title": "Stack Overflow", "url": "https://stackoverflow.com", "type": "site", "favicon": "https://cdn.sstatic.net/Sites/stackoverflow/Img/favicon.ico" },
+        { "id": "site2", "title": "GitHub", "url": "https://github.com", "type": "site", "favicon": "https://github.githubassets.com/favicons/favicon.svg" },
+        { "id": "site3", "title": "Hacker News", "url": "https://news.ycombinator.com", "type": "site", "favicon": "https://news.ycombinator.com/favicon.ico" },
+        { "id": "site4", "title": "TechCrunch", "url": "https://techcrunch.com", "type": "site", "favicon": "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32" },
+        { "id": "site5", "title": "The Verge", "url": "https://www.theverge.com", "type": "site", "favicon": "https://cdn.vox-cdn.com/uploads/chorus_asset/file/7395359/favicon-16x16.0.png" }
+      ],
+      "links": [
+        { "source": "tag1", "target": "site1" },
+        { "source": "tag1", "target": "site2" },
+        { "source": "tag2", "target": "site3" },
+        { "source": "tag2", "target": "site4" },
+        { "source": "tag3", "target": "site4" },
+        { "source": "tag3", "target": "site5" },
+        { "source": "tag1", "target": "site5" }
+      ]
+    }
+  ],
+  "settings": {
+    "nodeSize": 10,
+    "linkSize": 2,
+    "forceSettings": {
+      "charge": -300,
+      "linkDistance": 100
     }
   }
+}

@@ -1,123 +1,98 @@
-// global variables
-var width = window.innerWidth,
-    height = window.innerHeight;
+// Set up responsive SVG
+var aspect = 1.6; // Adjust this value to change the aspect ratio
+var width = 600; // Base width
+var height = width / aspect; // Base height
+
+var svg = d3.select("#graph")
+    .append("div")
+    .classed("svg-container", true)
+    .append("svg")
+    .attr("preserveAspectRatio", "xMinYMin meet")
+    .attr("viewBox", "0 0 " + width + " " + height)
+    .classed("svg-content-responsive", true)
+    .append("g");
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
-var svg = d3.select("#graph").append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .call(d3.zoom().on("zoom", function () {
-        svg.attr("transform", d3.event.transform)
-    }))
-    .append("g")
-    .attr("transform", "translate(40,0)"); // Add some left padding
+var simulation;
 
-// resize function
-window.onresize = function() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    svg.attr("width", width).attr("height", height);
-    updateLayout(); // Call this function to update the layout when resizing
-};
-
-function updateLayout() {
-    // Update the tree layout with new dimensions
-    treeLayout.size([height - 80, width - 160]);
-    
-    // Recompute the layout
-    root = treeLayout(hierarchy);
-    
-    // Update node positions
-    node.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
-    
-    // Update link paths
-    link.attr("d", d3.linkHorizontal()
-        .x(function(d) { return d.y; })
-        .y(function(d) { return d.x; }));
-}
-
-// Declare these variables in the global scope
-var treeLayout, root, node, link, hierarchy;
-
-// load and process data
+// Load and process data
 d3.json("space1.json", function(error, data) {
-    if (error) {
-        console.error("Error loading the JSON file:", error);
-        return;
-    }
+    if (error) throw error;
 
-    var space = data.spaces[0]; // assuming we're working with the first space
-    
-    // Add a root node
-    var rootNode = {id: "root", name: "WebGraph", type: "root"};
-    var nodes = [rootNode].concat(space.nodes);
-    
-    var graph = {
-        nodes: nodes,
-        links: space.links
-    };
+    var space = data.spaces[0];
+    var nodes = space.nodes;
+    var links = space.links;
 
-    // Get nodeSize from settings, or use a default value
-    var nodeSize = (space.settings && space.settings.nodeSize) || 5;
+    // Create force simulation
+    simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(function(d) { return d.id; }))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide(30));
 
-    // create a hierarchy
-    hierarchy = d3.stratify()
-        .id(function(d) { return d.id; })
-        .parentId(function(d) {
-            if (d.id === "root") return null;
-            if (d.type === "tag") return "root";
-            return d.tags && d.tags.length > 0 ? d.tags[0] : "root"; // fallback to root if no tags
-        })(graph.nodes);
+    // Create links
+    var link = svg.selectAll(".link")
+        .data(links)
+        .enter().append("line")
+        .attr("class", "link");
 
-    // create a tree layout
-    treeLayout = d3.tree()
-        .size([height - 80, width - 160]); // Adjust the size to leave some padding
-
-    root = treeLayout(hierarchy);
-
-    // create links
-    link = svg.selectAll(".link")
-        .data(root.links())
-        .enter().append("path")
-        .attr("class", "link")
-        .attr("d", d3.linkHorizontal()
-            .x(function(d) { return d.y; })
-            .y(function(d) { return d.x; }));
-
-    // create nodes
-    node = svg.selectAll(".node")
-        .data(root.descendants())
+    // Create nodes
+    var node = svg.selectAll(".node")
+        .data(nodes)
         .enter().append("g")
-        .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
-        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+        .attr("class", function(d) { return "node " + d.type; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
 
-    // add circles to nodes
+    // Add circles to nodes
     node.append("circle")
-        .attr("r", function(d) { 
-            if (d.data.type === "root") return nodeSize * 2;
-            return d.data.type === 'site' ? nodeSize : nodeSize * 1.5; 
-        })
-        .style("fill", function (d) { return d.data.color || color(d.data.type); });
+        .attr("r", function(d) { return d.type === "tag" ? 15 : 10; });
 
-    // add favicon to site nodes
-    node.filter(function(d) { return d.data.type === 'site'; })
+    // Add labels to nodes
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("x", function(d) { return d.type === "tag" ? 20 : 12; })
+        .text(function(d) { return d.name || d.title || d.id; });
+
+    // Add favicon to site nodes
+    node.filter(function(d) { return d.type === "site" && d.favicon; })
         .append("image")
-        .attr("xlink:href", function(d) { return d.data.favicon; })
+        .attr("xlink:href", function(d) { return d.favicon; })
         .attr("x", -8)
         .attr("y", -8)
         .attr("width", 16)
         .attr("height", 16);
 
-    // add labels to non-site nodes
-    node.filter(function(d) { return d.data.type !== 'site'; })
-        .append("text")
-        .attr("dy", ".35em")
-        .attr("x", function(d) { return d.children ? -13 : 13; })
-        .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
-        .text(function(d) { return d.data.name; });
+    // Update positions on tick
+    simulation.on("tick", function() {
+        link
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
 
-    // add titles to nodes
-    node.append("title")
-        .text(function (d) { return d.data.title || d.data.name; });
+        node
+            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+    });
+
+    // Drag functions
+    function dragstarted(d) {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function dragended(d) {
+        if (!d3.event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
 });
