@@ -1,0 +1,53 @@
+{
+    "spaces": [
+      {
+        "id": "space1",
+        "name": "Default Space",
+        "nodes": [
+          {
+            "id": "site1",
+            "type": "site",
+            "url": "https://example.com",
+            "title": "Example Site",
+            "favicon": "https://example.com/favicon.ico",
+            "snapshot": "data:image/png;base64,...",
+            "notes": "This is an example site.",
+            "visitCount": 10,
+            "tags": ["tag1", "tag2"],
+            "dateAccessed": "2024-08-07",
+            "color": "#FF0000"
+          },
+          {
+            "id": "tag1",
+            "type": "tag",
+            "name": "Tag 1",
+            "color": "#00FF00"
+          },
+          {
+            "id": "tag2",
+            "type": "tag",
+            "name": "Tag 2",
+            "color": "#0000FF"
+          }
+        ],
+        "links": [
+          {
+            "source": "site1",
+            "target": "tag1"
+          },
+          {
+            "source": "site1",
+            "target": "tag2"
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "nodeSize": 10,
+      "linkSize": 2,
+      "forceSettings": {
+        "charge": -100,
+        "linkDistance": 50
+      }
+    }
+  }

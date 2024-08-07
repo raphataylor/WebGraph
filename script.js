@@ -4,95 +4,120 @@ var width = window.innerWidth,
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
-var cola = cola.d3adaptor(d3)
-    .size([width, height]);
-
 var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height)
     .call(d3.zoom().on("zoom", function () {
         svg.attr("transform", d3.event.transform)
     }))
-    .append("g");
+    .append("g")
+    .attr("transform", "translate(40,0)"); // Add some left padding
 
 // resize function
 window.onresize = function() {
     width = window.innerWidth;
     height = window.innerHeight;
     svg.attr("width", width).attr("height", height);
-    cola.size([width, height]).resume();
+    updateLayout(); // Call this function to update the layout when resizing
 };
 
+function updateLayout() {
+    // Update the tree layout with new dimensions
+    treeLayout.size([height - 80, width - 160]);
+    
+    // Recompute the layout
+    root = treeLayout(hierarchy);
+    
+    // Update node positions
+    node.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+    
+    // Update link paths
+    link.attr("d", d3.linkHorizontal()
+        .x(function(d) { return d.y; })
+        .y(function(d) { return d.x; }));
+}
+
+// Declare these variables in the global scope
+var treeLayout, root, node, link, hierarchy;
+
 // load and process data
-d3.json("miserables.json", function (error, graph) {
-    if (error) throw error;
+d3.json("space1.json", function(error, data) {
+    if (error) {
+        console.error("Error loading the JSON file:", error);
+        return;
+    }
 
-    // create hierarchical structure
-    var groupMap = {};
-    var rootNode = {name: "Root", group: 0, isRoot: true};
-    graph.nodes.push(rootNode);
+    var space = data.spaces[0]; // assuming we're working with the first space
+    
+    // Add a root node
+    var rootNode = {id: "root", name: "WebGraph", type: "root"};
+    var nodes = [rootNode].concat(space.nodes);
+    
+    var graph = {
+        nodes: nodes,
+        links: space.links
+    };
 
-    graph.nodes.forEach(function (v, i) {
-        var g = v.group;
-        if (typeof groupMap[g] == 'undefined') {
-            groupMap[g] = {name: "Group " + g, group: g, isGroup: true};
-            graph.nodes.push(groupMap[g]);
-            graph.links.push({source: rootNode, target: groupMap[g], value: 1});
-        }
-        graph.links.push({source: groupMap[g], target: v, value: 1});
+    // Get nodeSize from settings, or use a default value
+    var nodeSize = (space.settings && space.settings.nodeSize) || 5;
 
-        v.width = v.height = 10;
-    });
+    // create a hierarchy
+    hierarchy = d3.stratify()
+        .id(function(d) { return d.id; })
+        .parentId(function(d) {
+            if (d.id === "root") return null;
+            if (d.type === "tag") return "root";
+            return d.tags && d.tags.length > 0 ? d.tags[0] : "root"; // fallback to root if no tags
+        })(graph.nodes);
 
-    // set up constraints for hierarchy
-    var constraints = [];
-    graph.nodes.forEach(function(v, i) {
-        if (v.isRoot) {
-            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 0}]});
-        } else if (v.isGroup) {
-            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 100}]});
-        } else {
-            constraints.push({type: "alignment", axis: "y", offsets: [{node: i, offset: 200}]});
-        }
-    });
+    // create a tree layout
+    treeLayout = d3.tree()
+        .size([height - 80, width - 160]); // Adjust the size to leave some padding
 
-    // set up cola layout
-    cola
-        .nodes(graph.nodes)
-        .links(graph.links)
-        .constraints(constraints)
-        .jaccardLinkLengths(40, 0.7)
-        .avoidOverlaps(true)
-        .start(50, 0, 50);
+    root = treeLayout(hierarchy);
 
     // create links
-    var link = svg.selectAll(".link")
-        .data(graph.links)
-        .enter().append("line")
+    link = svg.selectAll(".link")
+        .data(root.links())
+        .enter().append("path")
         .attr("class", "link")
-        .style("stroke-width", function (d) { return Math.sqrt(d.value); });
+        .attr("d", d3.linkHorizontal()
+            .x(function(d) { return d.y; })
+            .y(function(d) { return d.x; }));
 
     // create nodes
-    var node = svg.selectAll(".node")
-        .data(graph.nodes)
-        .enter().append("circle")
-        .attr("class", function(d) { return d.isRoot ? "root" : d.isGroup ? "group" : "node"; })
-        .attr("r", function(d) { return d.isRoot ? 15 : d.isGroup ? 10 : 5; })
-        .style("fill", function (d) { return d.isRoot ? "#fff" : color(d.group); })
-        .call(cola.drag);
+    node = svg.selectAll(".node")
+        .data(root.descendants())
+        .enter().append("g")
+        .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    // add circles to nodes
+    node.append("circle")
+        .attr("r", function(d) { 
+            if (d.data.type === "root") return nodeSize * 2;
+            return d.data.type === 'site' ? nodeSize : nodeSize * 1.5; 
+        })
+        .style("fill", function (d) { return d.data.color || color(d.data.type); });
+
+    // add favicon to site nodes
+    node.filter(function(d) { return d.data.type === 'site'; })
+        .append("image")
+        .attr("xlink:href", function(d) { return d.data.favicon; })
+        .attr("x", -8)
+        .attr("y", -8)
+        .attr("width", 16)
+        .attr("height", 16);
+
+    // add labels to non-site nodes
+    node.filter(function(d) { return d.data.type !== 'site'; })
+        .append("text")
+        .attr("dy", ".35em")
+        .attr("x", function(d) { return d.children ? -13 : 13; })
+        .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+        .text(function(d) { return d.data.name; });
 
     // add titles to nodes
     node.append("title")
-        .text(function (d) { return d.name; });
-
-    // update positions on tick
-    cola.on('tick', function () {
-        link.attr("x1", function (d) { return d.source.x; })
-            .attr("y1", function (d) { return d.source.y; })
-            .attr("x2", function (d) { return d.target.x; })
-            .attr("y2", function (d) { return d.target.y; });
-
-        node.attr("cx", function (d) { return d.x; })
-            .attr("cy", function (d) { return d.y; });
-    });
+        .text(function (d) { return d.data.title || d.data.name; });
 });
