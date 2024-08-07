@@ -1,20 +1,31 @@
-// Set up responsive SVG
-var aspect = 1.6; // Adjust this value to change the aspect ratio
-var width = 600; // Base width
-var height = width / aspect; // Base height
-
-var svg = d3.select("#graph")
-    .append("div")
-    .classed("svg-container", true)
-    .append("svg")
-    .attr("preserveAspectRatio", "xMinYMin meet")
-    .attr("viewBox", "0 0 " + width + " " + height)
-    .classed("svg-content-responsive", true)
-    .append("g");
+// Global variables
+var width = window.innerWidth,
+    height = window.innerHeight;
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
-var simulation;
+var svg = d3.select("#graph").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", function () {
+        svg.attr("transform", d3.event.transform)
+    }))
+    .append("g");
+
+var simulation; // Declare simulation in the global scope
+
+// Resize function
+function resizeGraph() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    svg.attr("width", width).attr("height", height);
+    if (simulation) {
+        simulation.force("center", d3.forceCenter(width / 2, height / 2));
+        simulation.alpha(1).restart();
+    }
+}
+
+window.addEventListener('resize', resizeGraph);
 
 // Load and process data
 d3.json("space1.json", function(error, data) {
