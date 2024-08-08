@@ -21,7 +21,8 @@
         { "id": "site7", "title": "Travel Insurance Comparison", "url": "https://www.insuremytrip.com", "type": "site", "favicon": "https://www.insuremytrip.com/favicon.ico" },
         { "id": "site8", "title": "Meal Planning App", "url": "https://www.mealplanner.app", "type": "site", "favicon": "https://www.mealplanner.app/favicon.ico" },
         { "id": "site9", "title": "Home Security Systems", "url": "https://www.safehome.org", "type": "site", "favicon": "https://www.safehome.org/favicon.ico" },
-        { "id": "site10", "title": "Budgeting Software", "url": "https://www.mint.com", "type": "site", "favicon": "https://www.mint.com/favicon.ico" }
+        { "id": "site10", "title": "Budgeting Software", "url": "https://www.mint.com", "type": "site", "favicon": "https://www.mint.com/favicon.ico" },
+        { "id": "site11", "title": "Santander", "url": "https://www.santander.co.uk/", "type": "site", "favicon": "https://www.santander.co.uk/favicon.ico" }
       ],
       "links": [
         { "source": "tag7", "target": "site1" },
@@ -47,7 +48,8 @@
         { "source": "tag8", "target": "site9" },
         { "source": "tag5", "target": "site10" },
         { "source": "tag6", "target": "site10" },
-        { "source": "tag2", "target": "site10" }
+        { "source": "tag2", "target": "site10" },
+        { "source": "tag5", "target": "site11" }
       ]
     }
   ],
