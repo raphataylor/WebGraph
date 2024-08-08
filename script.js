@@ -7,12 +7,11 @@ var color = d3.scaleOrdinal(d3.schemeCategory10);
 var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height)
-    .call(d3.zoom().on("zoom", function () {
-        svg.attr("transform", d3.event.transform)
-    }))
-    .append("g");
+    .call(d3.zoom().on("zoom", function() {
+        container.attr("transform", d3.event.transform);
+    }));
 
-var cola;
+var container = svg.append("g");
 
 // Load and process data
 d3.json("space1.json", function(error, data) {
@@ -39,60 +38,49 @@ d3.json("space1.json", function(error, data) {
     // Create groups (one for each tag)
     var groups = nodes.filter(function(n) { return n.type === "tag"; })
         .map(function(tag) {
-            var groupNodes = [tag].concat(nodes.filter(function(n) {
-                return n.type === "site" && links.some(function(l) {
-                    return (l.source.id === tag.id && l.target.id === n.id) || 
-                           (l.target.id === tag.id && l.source.id === n.id);
-                });
-            }));
             return {
-                leaves: groupNodes.map(function(n) { return nodes.indexOf(n); }),
                 id: tag.id,
-                padding: 20
+                nodes: [tag].concat(nodes.filter(function(n) {
+                    return n.type === "site" && links.some(function(l) {
+                        return (l.source.id === tag.id && l.target.id === n.id) || 
+                               (l.target.id === tag.id && l.source.id === n.id);
+                    });
+                }))
             };
         });
 
-    // Initialize cola layout
-    cola = cola.d3adaptor(d3)
-        .size([width, height])
-        .avoidOverlaps(true)
-        .handleDisconnected(true)
-        .linkDistance(30)
-        .groupCompactness(0.5)
-        .convergenceThreshold(1e-4)
-        .flowLayout('y', 100)
-        .symmetricDiffLinkLengths(5)
-        .jaccardLinkLengths(30, 0.7);
-
-    // Set up cola layout
-    cola
-        .nodes(nodes)
-        .links(links)
-        .groups(groups)
-        .start(50, 0, 50, 50);
+    // Create force simulation
+    var simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(function(d) { return d.id; }).distance(50))
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(30))
+        .on("tick", ticked);
 
     // Create group backgrounds
-    var group = svg.selectAll('.group')
+    var group = container.selectAll('.group')
         .data(groups)
-        .enter().append('rect')
-        .classed('group', true)
-        .attr('rx', 8).attr('ry', 8)
+        .enter().append('path')
+        .attr('class', 'group')
         .style("fill", function (d, i) { return color(i); })
-        .style("opacity", 0.3)
-        .call(cola.drag);
+        .style("stroke", function (d, i) { return d3.rgb(color(i)).darker(); })
+        .style("opacity", 0.3);
 
     // Create links
-    var link = svg.selectAll(".link")
+    var link = container.selectAll(".link")
         .data(links)
         .enter().append("line")
         .attr("class", "link");
 
     // Create nodes
-    var node = svg.selectAll(".node")
+    var node = container.selectAll(".node")
         .data(nodes)
         .enter().append("g")
         .attr("class", function(d) { return "node " + d.type; })
-        .call(cola.drag);
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
 
     // Add circles to nodes
     node.append("circle")
@@ -113,8 +101,7 @@ d3.json("space1.json", function(error, data) {
         .attr("width", 16)
         .attr("height", 16);
 
-    // Update positions on tick
-    cola.on("tick", function() {
+    function ticked() {
         link
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
@@ -124,10 +111,32 @@ d3.json("space1.json", function(error, data) {
         node
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-        group
-            .attr("x", function (d) { return d.bounds.x; })
-            .attr("y", function (d) { return d.bounds.y; })
-            .attr("width", function (d) { return d.bounds.width(); })
-            .attr("height", function (d) { return d.bounds.height(); });
-    });
+        group.attr("d", groupPath);
+    }
+
+    function dragstarted(d) {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function dragended(d) {
+        if (!d3.event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
+
+    function groupPath(d) {
+        var hull = d3.polygonHull(d.nodes.map(function(n) { return [n.x, n.y]; }));
+        if (hull) {
+            return "M" + hull.join("L") + "Z";
+        } else {
+            return "";
+        }
+    }
 });
