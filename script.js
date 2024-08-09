@@ -33,8 +33,15 @@ d3.json("graph-settings.json", function(error, settings) {
             return;
         }
 
-        var tags = data.tags;
-        var sites = data.sites;
+        // check if data.spaces exists and has at least one element
+        if (!data.spaces || data.spaces.length === 0) {
+            console.error("no spaces found in the bookmarks data");
+            return;
+        }
+
+        var space = data.spaces[0]; // assuming we're working with the first space
+        var tags = space.tags || [];
+        var sites = space.sites || [];
 
         // create nodes array
         var nodes = tags.concat(sites);
@@ -42,12 +49,14 @@ d3.json("graph-settings.json", function(error, settings) {
         // create links array
         var links = [];
         sites.forEach(function(site) {
-            site.tags.forEach(function(tagId) {
-                links.push({
-                    source: site.id,
-                    target: tagId
+            if (site.tags) {
+                site.tags.forEach(function(tagId) {
+                    links.push({
+                        source: site.id,
+                        target: tagId
+                    });
                 });
-            });
+            }
         });
 
         // create a map of node id to node object
@@ -59,8 +68,8 @@ d3.json("graph-settings.json", function(error, settings) {
         // process links to use node objects instead of ids
         links = links.map(function(link) {
             return {
-                source: nodeMap[link.source],
-                target: nodeMap[link.target]
+                source: nodeMap[link.source] || link.source,
+                target: nodeMap[link.target] || link.target
             };
         });
 
@@ -69,7 +78,7 @@ d3.json("graph-settings.json", function(error, settings) {
             return {
                 id: tag.id,
                 nodes: [tag].concat(sites.filter(function(site) {
-                    return site.tags.includes(tag.id);
+                    return site.tags && site.tags.includes(tag.id);
                 }))
             };
         });
@@ -118,7 +127,7 @@ d3.json("graph-settings.json", function(error, settings) {
             .attr("x", function(d) { return d.tags ? nodeSize * 1.5 : nodeSize * 2.5; })
             .text(function(d) { return d.name || d.title; });
 
-        // add favicon to site nodes (if available)
+        // add favicon to site nodes
         node.filter(function(d) { return d.tags && d.favicon; })
             .append("image")
             .attr("xlink:href", function(d) { return d.favicon; })
@@ -126,6 +135,16 @@ d3.json("graph-settings.json", function(error, settings) {
             .attr("y", -nodeSize * 0.8)
             .attr("width", nodeSize * 1.6)
             .attr("height", nodeSize * 1.6);
+
+        // add tooltip
+        node.append("title")
+            .text(function(d) {
+                if (d.tags) {
+                    return d.title + "\nURL: " + d.url + "\nVisits: " + d.visits + "\nCreated: " + d.dateCreated + "\nNotes: " + d.notes;
+                } else {
+                    return d.name + "\nSites: " + d.childCount;
+                }
+            });
 
         function ticked() {
             link
