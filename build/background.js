@@ -13,8 +13,3 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
     }
   });
-  
-  // Handle extension icon click
-  chrome.action.onClicked.addListener((tab) => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
-  });

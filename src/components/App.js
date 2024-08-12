@@ -5,10 +5,11 @@ import '../popup.css';
 function App() {
   return (
     <div className="App">
+      <h1>WebGraph</h1>
+      <p>Welcome to WebGraph. This page is only accessible through the extension&apos;s context menu.</p>
       <div id="graph">
         <Graph />
       </div>
-      {/* Removed the "Open Full View" button as it's no longer needed */}
     </div>
   );
 }
