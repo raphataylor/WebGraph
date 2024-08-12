@@ -12,8 +12,10 @@
         "start": "react-scripts start",
         "build": "react-scripts build",
         "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    },
+        "eject": "react-scripts eject",
+        "build-extension": "INLINE_RUNTIME_CHUNK=false react-scripts build && npm run post-build",
+        "post-build": "cp manifest.json build/ && cp src/background.js build/ && cp public/*.png build/ && cp public/favicon.ico build/"
+      },
     "eslintConfig": {
         "extends": [
             "react-app",
