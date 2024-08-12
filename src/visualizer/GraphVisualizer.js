@@ -180,6 +180,49 @@ class GraphVisualizer {
     d.fx = null;
     d.fy = null;
   }
+
+  updateSize(width, height) {
+    this.width = width;
+    this.height = height;
+    
+    // Update SVG size
+    if (this.svg) {
+      this.svg
+        .attr('width', this.width)
+        .attr('height', this.height);
+    }
+
+    // Update force simulation
+    if (this.simulation) {
+      this.simulation
+        .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+        .restart();
+    }
+
+    // Redraw nodes and links if necessary
+    this.updateNodePositions();
+    this.updateLinkPositions();
+  }
+
+  updateNodePositions() {
+    // Update node positions based on new size
+    if (this.nodeElements) {
+      this.nodeElements
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y);
+    }
+  }
+
+  updateLinkPositions() {
+    // Update link positions based on new size
+    if (this.linkElements) {
+      this.linkElements
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+    }
+  }
 }
 
 export default GraphVisualizer;

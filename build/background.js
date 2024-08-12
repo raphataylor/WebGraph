@@ -1,3 +1,5 @@
+console.log('Background script loaded');
+
 // create a context menu item
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
