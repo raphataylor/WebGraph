@@ -1,6 +1,4 @@
-console.log('Background script loaded');
-
-// create a context menu item
+// Create a context menu item
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
       id: "open-webgraph",
@@ -9,16 +7,14 @@ chrome.runtime.onInstalled.addListener(() => {
     });
   });
   
-  // handle context menu click
+  // Handle context menu click
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === "open-webgraph") {
-      chrome.tabs.create({ url: chrome.runtime.getURL("public/index.html") });
+      chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
     }
   });
   
-  // listen for messages from the popup
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "openInNewTab") {
-      chrome.tabs.create({ url: chrome.runtime.getURL("public/index.html") });
-    }
+  // Handle extension icon click
+  chrome.action.onClicked.addListener((tab) => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
   });
