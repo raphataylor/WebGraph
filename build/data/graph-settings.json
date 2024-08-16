@@ -1,8 +1,0 @@
-{
-  "nodeSize": 10,
-  "linkSize": 2,
-  "forceSettings": {
-    "charge": -200,
-    "linkDistance": 50
-  }
-}
