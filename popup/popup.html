@@ -1,30 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGraph Bookmark</title>
-    <link rel="stylesheet" href="popup.css">
+  <title>WebGraph</title>
+  <style>
+    body { width: 300px; padding: 10px; }
+    button { margin-top: 10px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Add Bookmark</h1>
-        <form id="bookmarkForm">
-            <div class="form-group">
-                <label for="url">URL:</label>
-                <input type="text" id="url" name="url" readonly>
-            </div>
-            <div class="form-group">
-                <label for="tags">Tags (comma separated):</label>
-                <input type="text" id="tags" name="tags" placeholder="e.g. work, research, todo">
-            </div>
-            <div class="form-group">
-                <label for="notes">Notes:</label>
-                <textarea id="notes" name="notes" rows="4" placeholder="Add your notes here..."></textarea>
-            </div>
-            <button type="submit" id="saveButton">Save Bookmark</button>
-        </form>
-    </div>
-    <script src="popup.bundle.js"></script>
+  <h2>WebGraph</h2>
+  <button id="saveTab">Save Current Tab</button>
+  <button id="openVisualization">Open Visualization</button>
+  <script src="popup.js"></script>
 </body>
 </html>
