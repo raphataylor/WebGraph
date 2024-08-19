@@ -3,19 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGraph Popup</title>
+    <title>WebGraph Bookmark</title>
     <link rel="stylesheet" href="popup.css">
-    <script src="../lib/html2canvas.min.js"></script>
 </head>
 <body>
-    <form id="bookmarkForm">
-        <input type="text" id="title" placeholder="Title">
-        <input type="text" id="url" placeholder="URL">
-        <input type="text" id="tags" placeholder="Tags (comma-separated)">
-        <textarea id="notes" placeholder="Notes"></textarea>
-        <button type="submit">Save Bookmark</button>
-    </form>
-    <button id="openVisualization">Open Visualization</button>
-    <script type="module" src="popup.js"></script>
+    <div class="container">
+        <h1>Save Bookmark</h1>
+        <form id="bookmarkForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label for="url">URL:</label>
+                <input type="url" id="url" required>
+            </div>
+            <div class="form-group">
+                <label for="tags">Tags:</label>
+                <div id="tagContainer"></div>
+                <input type="text" id="tagInput" placeholder="Add a tag and press Enter">
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" rows="5"></textarea>
+            </div>
+            <button type="submit">Save Bookmark</button>
+        </form>
+        <button id="openVisualization">Open Visualization</button>
+    </div>
+    <script src="popup.js" type="module"></script>
 </body>
 </html>

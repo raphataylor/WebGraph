@@ -5,6 +5,9 @@ const dataManager = new DataManager();
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('bookmarkForm');
   const openVisualizationButton = document.getElementById('openVisualization');
+  const tagInput = document.getElementById('tagInput');
+  const tagContainer = document.getElementById('tagContainer');
+  const tags = new Set();
 
   // Populate the form with the current tab's information
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -12,6 +15,36 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('title').value = currentTab.title;
     document.getElementById('url').value = currentTab.url;
   });
+
+  tagInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const tag = this.value.trim();
+      if (tag && !tags.has(tag)) {
+        tags.add(tag);
+        renderTags();
+        this.value = '';
+      }
+    }
+  });
+
+  function renderTags() {
+    tagContainer.innerHTML = '';
+    tags.forEach(tag => {
+      const tagElement = document.createElement('span');
+      tagElement.classList.add('tag');
+      tagElement.textContent = tag;
+      const removeButton = document.createElement('span');
+      removeButton.classList.add('tag-remove');
+      removeButton.textContent = '×';
+      removeButton.onclick = () => {
+        tags.delete(tag);
+        renderTags();
+      };
+      tagElement.appendChild(removeButton);
+      tagContainer.appendChild(tagElement);
+    });
+  }
 
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -36,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const bookmark = {
       title: document.getElementById('title').value,
       url: url,
-      tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()),
+      tags: Array.from(tags),
       notes: document.getElementById('notes').value,
       dateCreated: new Date().toISOString().split('T')[0],
       visits: 1,
