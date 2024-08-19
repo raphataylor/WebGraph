@@ -1,6 +1,4 @@
-import * as d3 from 'd3';
-
-class GraphVisualizer {
+class GraphVisualization {
   constructor(element) {
     this.element = element;
     this.width = window.innerWidth;
@@ -13,6 +11,10 @@ class GraphVisualizer {
     this.linkSize = 2;
     this.charge = -200;
     this.linkDistance = 50;
+    this.nodes = [];
+    this.links = [];
+    this.initializeGraph();
+    this.setupEventListeners();
   }
 
   initializeGraph() {
@@ -24,50 +26,69 @@ class GraphVisualizer {
       }));
 
     this.container = this.svg.append("g");
+    this.loadBookmarksData();
   }
 
-  loadGraphSettings(settingsUrl) {
-    return d3.json(settingsUrl).then(settings => {
-      this.nodeSize = settings.nodeSize;
-      this.linkSize = settings.linkSize;
-      this.charge = settings.forceSettings.charge;
-      this.linkDistance = settings.forceSettings.linkDistance;
-    }).catch(error => {
-      console.error("Error loading the graph settings:", error);
+  setupEventListeners() {
+    d3.select("#node-size").on("input", () => {
+      this.nodeSize = +d3.select("#node-size").property("value");
+      this.updateVisualization();
+    });
+
+    d3.select("#link-size").on("input", () => {
+      this.linkSize = +d3.select("#link-size").property("value");
+      this.updateVisualization();
+    });
+
+    d3.select("#charge").on("input", () => {
+      this.charge = +d3.select("#charge").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#link-distance").on("input", () => {
+      this.linkDistance = +d3.select("#link-distance").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#search-bar").on("input", () => {
+      const searchTerm = d3.select("#search-bar").property("value").toLowerCase();
+      this.highlightNodes(searchTerm);
+    });
+
+    d3.select("#go-to-link").on("click", () => {
+      if (this.selectedNode && this.selectedNode.url) {
+        window.open(this.selectedNode.url, '_blank');
+      }
     });
   }
 
-  loadBookmarksData(bookmarksUrl) {
-    return d3.json(bookmarksUrl).then(data => {
-      if (!data.spaces || data.spaces.length === 0) {
-        console.error("No spaces found in the bookmarks data");
-        return;
+  loadBookmarksData() {
+    chrome.storage.local.get('webgraph_data', (result) => {
+      if (result.webgraph_data) {
+        const space = result.webgraph_data.spaces[0];
+        const tags = space.tags || [];
+        const sites = space.sites || [];
+        this.createVisualization(tags, sites);
+      } else {
+        console.error("No data found in storage");
       }
-
-      const space = data.spaces[0];
-      const tags = space.tags || [];
-      const sites = space.sites || [];
-
-      this.createVisualization(tags, sites);
-    }).catch(error => {
-      console.error("Error loading the bookmarks data:", error);
     });
   }
 
   createVisualization(tags, sites) {
-    const nodes = tags.concat(sites);
-    const links = this.createLinks(sites);
+    this.nodes = tags.concat(sites);
+    this.links = this.createLinks(sites);
     const groups = this.createGroups(tags, sites);
 
-    this.simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id).distance(this.linkDistance))
+    this.simulation = d3.forceSimulation(this.nodes)
+      .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
       .force("charge", d3.forceManyBody().strength(this.charge))
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
       .force("collision", d3.forceCollide().radius(this.nodeSize * 3));
 
     this.drawGroups(groups);
-    this.drawLinks(links);
-    this.drawNodes(nodes);
+    this.drawLinks(this.links);
+    this.drawNodes(this.nodes);
 
     this.simulation.on("tick", () => this.ticked());
   }
@@ -117,7 +138,8 @@ class GraphVisualizer {
       .call(d3.drag()
         .on("start", (event, d) => this.dragstarted(event, d))
         .on("drag", (event, d) => this.dragged(event, d))
-        .on("end", (event, d) => this.dragended(event, d)));
+        .on("end", (event, d) => this.dragended(event, d)))
+      .on("click", (event, d) => this.nodeClicked(d));
 
     node.append("circle")
       .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
@@ -181,48 +203,50 @@ class GraphVisualizer {
     d.fy = null;
   }
 
-  updateSize(width, height) {
-    this.width = width;
-    this.height = height;
-    
-    // Update SVG size
-    if (this.svg) {
-      this.svg
-        .attr('width', this.width)
-        .attr('height', this.height);
-    }
+  updateVisualization() {
+    this.container.selectAll(".node circle")
+      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
 
-    // Update force simulation
-    if (this.simulation) {
-      this.simulation
-        .force('center', d3.forceCenter(this.width / 2, this.height / 2))
-        .restart();
-    }
-
-    // Redraw nodes and links if necessary
-    this.updateNodePositions();
-    this.updateLinkPositions();
+    this.container.selectAll(".link")
+      .attr("stroke-width", this.linkSize);
   }
 
-  updateNodePositions() {
-    // Update node positions based on new size
-    if (this.nodeElements) {
-      this.nodeElements
-        .attr('cx', d => d.x)
-        .attr('cy', d => d.y);
-    }
+  updateSimulation() {
+    this.simulation
+      .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
+      .force("charge", d3.forceManyBody().strength(this.charge))
+      .alpha(1)
+      .restart();
   }
 
-  updateLinkPositions() {
-    // Update link positions based on new size
-    if (this.linkElements) {
-      this.linkElements
-        .attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y);
+  highlightNodes(searchTerm) {
+    this.container.selectAll(".node")
+      .classed("highlighted", d => {
+        const nodeText = (d.name || d.title || "").toLowerCase();
+        return nodeText.includes(searchTerm);
+      });
+  }
+
+  nodeClicked(d) {
+    this.selectedNode = d;
+    this.updateSidebar(d);
+  }
+
+  updateSidebar(node) {
+    const snapshotViewer = d3.select("#snapshot-viewer");
+    const notesViewer = d3.select("#notes-viewer");
+
+    if (node.tags) {
+      snapshotViewer.html(`<img src="${node.snapshot || 'placeholder.png'}" alt="Site snapshot" style="width:100%;">`);
+      notesViewer.html(`<h3>${node.title}</h3><p>${node.notes || 'No notes available.'}</p>`);
+      d3.select("#go-to-link").style("display", "block");
+    } else {
+      snapshotViewer.html("");
+      notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${node.childCount || 0} associated sites.</p>`);
+      d3.select("#go-to-link").style("display", "none");
     }
   }
 }
 
-export default GraphVisualizer;
+// Initialize the graph
+const graph = new GraphVisualization("#graph");

@@ -1,0 +1,51 @@
+{
+  "spaces": [
+    {
+      "id": "space1",
+      "name": "Personal Bookmarks",
+      "tags": [
+        {"id": "tag1", "name": "Camping Trip"},
+        {"id": "tag2", "name": "Cheap Flights"},
+        {"id": "tag3", "name": "Programming"},
+        {"id": "tag4", "name": "Tutorials"},
+        {"id": "tag5", "name": "Painting"},
+        {"id": "tag6", "name": "Website Project"},
+        {"id": "tag7", "name": "Social"},
+        {"id": "tag8", "name": "News"},
+        {"id": "tag9", "name": "Ebay"}
+      ],
+      "sites": [
+        {"id": "site1", "title": "Hiking Trails in the Highlands", "url": "https://www.walkhighlands.co.uk/", "tags": ["tag1"], "dateCreated": "2023-05-15", "visits": 12, "notes": "Great resource for planning hikes", "snapshot": "highland_trails.jpg", "favicon": "https://www.walkhighlands.co.uk/favicon.ico"},
+        {"id": "site2", "title": "Scotrail Train Times to Fort William", "url": "https://www.scotrail.co.uk/", "tags": ["tag1"], "dateCreated": "2023-05-16", "visits": 5, "notes": "Check train schedules", "snapshot": "scotrail.jpg", "favicon": "https://www.scotrail.co.uk/favicon.ico"},
+        {"id": "site3", "title": "Advice for Dealing with Midges in the Highlands", "url": "https://www.smidgeup.com/midge-advice/", "tags": ["tag1", "tag7"], "dateCreated": "2023-05-17", "visits": 8, "notes": "Essential info for summer camping", "snapshot": "midges_advice.jpg", "favicon": "https://www.smidgeup.com/favicon.ico"},
+        {"id": "site4", "title": "Best Budget Airlines for European Travel", "url": "https://www.skyscanner.net/", "tags": ["tag2"], "dateCreated": "2023-06-01", "visits": 20, "notes": "Compare flight prices", "snapshot": "budget_airlines.jpg", "favicon": "https://www.skyscanner.net/favicon.ico"},
+        {"id": "site5", "title": "How to Find Error Fares and Mistake Prices", "url": "https://www.secretflying.com/", "tags": ["tag2", "tag4"], "dateCreated": "2023-06-02", "visits": 15, "notes": "Check for flight deals", "snapshot": "error_fares.jpg", "favicon": "https://www.secretflying.com/favicon.ico"},
+        {"id": "site6", "title": "Hacker News", "url": "https://news.ycombinator.com/", "tags": ["tag3", "tag8"], "dateCreated": "2023-06-10", "visits": 100, "notes": "Tech news and discussions", "snapshot": "hacker_news.jpg", "favicon": "https://news.ycombinator.com/favicon.ico"},
+        {"id": "site7", "title": "Stack Overflow", "url": "https://stackoverflow.com/", "tags": ["tag3", "tag7"], "dateCreated": "2023-06-11", "visits": 150, "notes": "Programming Q&A", "snapshot": "stackoverflow.jpg", "favicon": "https://stackoverflow.com/favicon.ico"},
+        {"id": "site8", "title": "FreeCodeCamp - Learn to Code for Free", "url": "https://www.freecodecamp.org/", "tags": ["tag3", "tag4"], "dateCreated": "2023-06-12", "visits": 30, "notes": "Free coding courses", "snapshot": "freecodecamp.jpg", "favicon": "https://www.freecodecamp.org/favicon.ico"},
+        {"id": "site9", "title": "Oil Painting Tips For Beginners - Draw Paint Academy", "url": "https://drawpaintacademy.com/", "tags": ["tag4", "tag5"], "dateCreated": "2023-07-01", "visits": 10, "notes": "Useful painting tutorials", "snapshot": "oil_painting_tips.jpg", "favicon": "https://drawpaintacademy.com/favicon.ico"},
+        {"id": "site10", "title": "Watercolor Techniques for Landscapes", "url": "https://www.artistsnetwork.com/", "tags": ["tag4", "tag5"], "dateCreated": "2023-07-02", "visits": 8, "notes": "Landscape painting techniques", "snapshot": "watercolor_landscapes.jpg", "favicon": "https://www.artistsnetwork.com/favicon.ico"},
+        {"id": "site11", "title": "Building a Responsive Website with HTML and CSS", "url": "https://www.w3schools.com/css/css_rwd_intro.asp", "tags": ["tag4", "tag6"], "dateCreated": "2023-07-05", "visits": 25, "notes": "Comprehensive guide on responsive design", "snapshot": "responsive_design.jpg", "favicon": "https://www.w3schools.com/favicon.ico"},
+        {"id": "site12", "title": "Color Theory for Digital Artists", "url": "https://www.skillshare.com/classes/Color-Theory-for-Digital-Artists/1827411795", "tags": ["tag5"], "dateCreated": "2023-07-08", "visits": 5, "notes": "Excellent course on color theory", "snapshot": "color_theory.jpg", "favicon": "https://www.skillshare.com/favicon.ico"},
+        {"id": "site13", "title": "How to Choose the Right Web Hosting", "url": "https://www.wpbeginner.com/wordpress-hosting/", "tags": ["tag6"], "dateCreated": "2023-07-10", "visits": 3, "notes": "Comprehensive guide on web hosting", "snapshot": "web_hosting.jpg", "favicon": "https://www.wpbeginner.com/favicon.ico"},
+        {"id": "site14", "title": "Reddit - Front Page of the Internet", "url": "https://www.reddit.com/", "tags": ["tag7", "tag8"], "dateCreated": "2023-07-15", "visits": 200, "notes": "General discussions and news", "snapshot": "reddit.jpg", "favicon": "https://www.reddit.com/favicon.ico"},
+        {"id": "site15", "title": "Twitter", "url": "https://twitter.com/", "tags": ["tag7", "tag8"], "dateCreated": "2023-07-16", "visits": 180, "notes": "Quick updates and news", "snapshot": "twitter.jpg", "favicon": "https://twitter.com/favicon.ico"},
+        {"id": "site16", "title": "BBC News", "url": "https://www.bbc.com/news", "tags": ["tag8"], "dateCreated": "2023-07-20", "visits": 50, "notes": "Reliable news source", "snapshot": "bbc_news.jpg", "favicon": "https://www.bbc.com/favicon.ico"},
+        {"id": "site17", "title": "The Guardian", "url": "https://www.theguardian.com/", "tags": ["tag8"], "dateCreated": "2023-07-21", "visits": 45, "notes": "In-depth news articles", "snapshot": "guardian.jpg", "favicon": "https://www.theguardian.com/favicon.ico"},
+        {"id": "site18", "title": "Ebay Homepage", "url": "https://www.ebay.com/", "tags": ["tag9"], "dateCreated": "2023-07-25", "visits": 30, "notes": "Online marketplace", "snapshot": "ebay_home.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site19", "title": "Ebay Selling Hub", "url": "https://www.ebay.com/sh/ovw", "tags": ["tag9"], "dateCreated": "2023-07-26", "visits": 10, "notes": "Manage Ebay listings", "snapshot": "ebay_selling.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site20", "title": "Ebay Search Results for Camping Stove", "url": "https://www.ebay.com/sch/i.html?_nkw=camping+stove", "tags": ["tag1", "tag9"], "dateCreated": "2023-07-27", "visits": 2, "notes": "Potential camping gear", "snapshot": "camping_stove.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site21", "title": "Ebay Search Results for All Season Bag", "url": "https://www.ebay.com/sch/i.html?_nkw=all+season+sleeping+bag", "tags": ["tag1", "tag9"], "dateCreated": "2023-07-28", "visits": 3, "notes": "Sleeping bag options", "snapshot": "sleeping_bag.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site22", "title": "Ebay Search Results for Camping Utensils", "url": "https://www.ebay.com/sch/i.html?_nkw=camping+utensils", "tags": ["tag1", "tag9"], "dateCreated": "2023-07-29", "visits": 1, "notes": "Lightweight utensils for camping", "snapshot": "camping_utensils.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site23", "title": "Ebay Search Results for Oil Paint", "url": "https://www.ebay.com/sch/i.html?_nkw=oil+paint", "tags": ["tag5", "tag9"], "dateCreated": "2023-08-01", "visits": 4, "notes": "Oil paint supplies", "snapshot": "oil_paint.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site24", "title": "Ebay Search Results for Studio Easels", "url": "https://www.ebay.com/sch/i.html?_nkw=studio+easel", "tags": ["tag5", "tag9"], "dateCreated": "2023-08-02", "visits": 2, "notes": "Studio easel options", "snapshot": "studio_easel.jpg", "favicon": "https://www.ebay.com/favicon.ico"},
+        {"id": "site25", "title": "GitHub - Where the World Builds Software", "url": "https://github.com/", "tags": ["tag3", "tag7"], "dateCreated": "2023-08-05", "visits": 80, "notes": "Code repository and version control", "snapshot": "github.jpg", "favicon": "https://github.com/favicon.ico"},
+        {"id": "site26", "title": "MDN Web Docs", "url": "https://developer.mozilla.org/", "tags": ["tag3", "tag4"], "dateCreated": "2023-08-06", "visits": 60, "notes": "Comprehensive web development documentation", "snapshot": "mdn_docs.jpg", "favicon": "https://developer.mozilla.org/favicon.ico"},
+        {"id": "site27", "title": "Skyscanner - Compare Cheap Flights", "url": "https://www.skyscanner.net/", "tags": ["tag2"], "dateCreated": "2023-08-10", "visits": 15, "notes": "Flight comparison tool", "snapshot": "skyscanner.jpg", "favicon": "https://www.skyscanner.net/favicon.ico"},
+        {"id": "site28", "title": "REI - Camping Gear and Outdoor Equipment", "url": "https://www.rei.com/", "tags": ["tag1"], "dateCreated": "2023-08-15", "visits": 8, "notes": "High-quality camping gear", "snapshot": "rei.jpg", "favicon": "https://www.rei.com/favicon.ico"},
+        {"id": "site29", "title": "Codecademy - Learn to Code", "url": "https://www.codecademy.com/", "tags": ["tag3", "tag4"], "dateCreated": "2023-08-20", "visits": 40, "notes": "Interactive coding courses", "snapshot": "codecademy.jpg", "favicon": "https://www.codecademy.com/favicon.ico"},
+        {"id": "site30", "title": "Dribbble - Discover the World's Top Designers & Creative Professionals", "url": "https://dribbble.com/", "tags": ["tag5", "tag7"], "dateCreated": "2023-08-25", "visits": 20, "notes": "Design inspiration and portfolios", "snapshot": "dribbble.jpg", "favicon": "https://dribbble.com/favicon.ico"}
+      ]
+    }
+  ]
+}
