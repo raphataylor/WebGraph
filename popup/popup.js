@@ -16,13 +16,17 @@ document.addEventListener('DOMContentLoaded', function() {
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    const url = document.getElementById('url').value;
+    const favicon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`;
+
     const bookmark = {
       title: document.getElementById('title').value,
-      url: document.getElementById('url').value,
+      url: url,
       tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()),
       notes: document.getElementById('notes').value,
       dateCreated: new Date().toISOString().split('T')[0],
-      visits: 1
+      visits: 1,
+      favicon: favicon
     };
 
     try {

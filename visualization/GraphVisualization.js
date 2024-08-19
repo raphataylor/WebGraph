@@ -167,31 +167,38 @@ class GraphVisualization {
   drawNodes(nodes) {
     const node = this.container.selectAll(".node")
       .data(nodes)
-      .enter().append("g")
+      .join("g")  // Use join instead of enter().append()
       .attr("class", d => "node " + (d.tags ? "site" : "tag"))
       .call(d3.drag()
         .on("start", (event, d) => this.dragstarted(event, d))
         .on("drag", (event, d) => this.dragged(event, d))
         .on("end", (event, d) => this.dragended(event, d)))
       .on("click", (event, d) => this.nodeClicked(d));
-
-    node.append("circle")
+  
+    node.selectAll("circle")
+      .data(d => [d])
+      .join("circle")
       .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-
-    node.append("text")
+  
+    node.selectAll("text")
+      .data(d => [d])
+      .join("text")
       .attr("dy", ".35em")
       .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
       .text(d => d.name || d.title);
-
-    node.filter(d => d.tags && d.favicon)
-      .append("image")
+  
+    node.selectAll("image")
+      .data(d => d.tags && d.favicon ? [d] : [])
+      .join("image")
       .attr("xlink:href", d => d.favicon)
       .attr("x", -this.nodeSize * 0.8)
       .attr("y", -this.nodeSize * 0.8)
       .attr("width", this.nodeSize * 1.6)
       .attr("height", this.nodeSize * 1.6);
-
-    node.append("title")
+  
+    node.selectAll("title")
+      .data(d => [d])
+      .join("title")
       .text(d => {
         if (d.tags) {
           return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
@@ -273,7 +280,7 @@ class GraphVisualization {
 
     if (node.tags) {  // It's a site node
       snapshotViewer.html(`<img src="${node.snapshot || 'placeholder.png'}" alt="Site snapshot" style="width:100%;">`);
-      notesViewer.html(`<h3>${node.title}</h3><p>${node.notes || 'No notes available.'}</p>`);
+      notesViewer.html(`<h3>${node.title}</h3><p>${node.notes || ''}</p>`);
     } else {  // It's a tag node
       snapshotViewer.html("");
       notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);
