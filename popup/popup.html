@@ -3,33 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGraph Bookmark</title>
+    <title>WebGraph Popup</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Add Bookmark to WebGraph</h1>
-        <form id="bookmarkForm">
-            <div class="form-group">
-                <label for="title">Title:</label>
-                <input type="text" id="title" name="title" required>
-            </div>
-            <div class="form-group">
-                <label for="url">URL:</label>
-                <input type="url" id="url" name="url" required>
-            </div>
-            <div class="form-group">
-                <label for="tags">Tags (comma-separated):</label>
-                <input type="text" id="tags" name="tags">
-            </div>
-            <div class="form-group">
-                <label for="notes">Notes:</label>
-                <textarea id="notes" name="notes"></textarea>
-            </div>
-            <button type="submit">Save Bookmark</button>
-        </form>
-        <button id="openVisualization">Open Visualization</button>
-    </div>
-    <script src="popup.js"></script>
+    <form id="bookmarkForm">
+        <input type="text" id="title" placeholder="Title">
+        <input type="text" id="url" placeholder="URL">
+        <input type="text" id="tags" placeholder="Tags (comma-separated)">
+        <textarea id="notes" placeholder="Notes"></textarea>
+        <button type="submit">Save Bookmark</button>
+    </form>
+    <button id="openVisualization">Open Visualization</button>
+
+    <script type="module" src="popup.js"></script>
 </body>
 </html>

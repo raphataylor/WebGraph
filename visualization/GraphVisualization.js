@@ -1,6 +1,9 @@
+import DataManager from '../utils/DataManager.js';
+
 class GraphVisualization {
   constructor(element) {
     this.element = element;
+    this.dataManager = new DataManager();
     this.width = window.innerWidth;
     this.height = window.innerHeight;
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -13,6 +16,7 @@ class GraphVisualization {
     this.linkDistance = 50;
     this.nodes = [];
     this.links = [];
+    this.tagMap = new Map();
     this.initializeGraph();
     this.setupEventListeners();
   }
@@ -60,24 +64,53 @@ class GraphVisualization {
         window.open(this.selectedNode.url, '_blank');
       }
     });
+
+    d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
+    d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
   }
 
-  loadBookmarksData() {
-    chrome.storage.local.get('webgraph_data', (result) => {
-      if (result.webgraph_data) {
-        const space = result.webgraph_data.spaces[0];
-        const tags = space.tags || [];
-        const sites = space.sites || [];
-        this.createVisualization(tags, sites);
-      } else {
-        console.error("No data found in storage");
+  async loadBookmarksData() {
+    try {
+      const data = await this.dataManager.loadData();
+      const space = data.spaces[0];
+      const tags = space.tags || [];
+      const sites = space.sites || [];
+      
+      // Create the tagMap
+      this.tagMap = new Map(tags.map(tag => [tag.id, tag]));
+      
+      this.createVisualization(tags, sites);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
+  }
+
+  async removeSelectedBookmark() {
+    if (this.selectedNode && this.selectedNode.tags) {  // Check if it's a bookmark node
+      try {
+        await this.dataManager.removeBookmark(this.selectedNode.id);
+        this.loadBookmarksData();  // Reload and redraw the graph
+      } catch (error) {
+        console.error("Error removing bookmark:", error);
       }
-    });
+    }
+  }
+
+  async clearAllBookmarks() {
+    if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
+      try {
+        await this.dataManager.clearAll();
+        this.loadBookmarksData();  // Reload and redraw the graph
+      } catch (error) {
+        console.error("Error clearing bookmarks:", error);
+      }
+    }
   }
 
   createVisualization(tags, sites) {
-    this.nodes = tags.concat(sites);
+    this.nodes = [...tags, ...sites];
     this.links = this.createLinks(sites);
+
     const groups = this.createGroups(tags, sites);
 
     this.simulation = d3.forceSimulation(this.nodes)
@@ -98,7 +131,11 @@ class GraphVisualization {
     sites.forEach(site => {
       if (site.tags) {
         site.tags.forEach(tagId => {
-          links.push({ source: site.id, target: tagId });
+          if (this.tagMap.has(tagId)) {
+            links.push({ source: site.id, target: tagId });
+          } else {
+            console.warn(`Tag with id ${tagId} not found for site ${site.id}`);
+          }
         });
       }
     });
@@ -108,7 +145,7 @@ class GraphVisualization {
   createGroups(tags, sites) {
     return tags.map(tag => ({
       id: tag.id,
-      nodes: [tag].concat(sites.filter(site => site.tags && site.tags.includes(tag.id)))
+      nodes: [tag, ...sites.filter(site => site.tags && site.tags.includes(tag.id))]
     }));
   }
 
