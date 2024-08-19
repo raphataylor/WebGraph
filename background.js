@@ -2,16 +2,28 @@ import DataManager from './utils/DataManager.js';
 
 const dataManager = new DataManager();
 
+function createContextMenu() {
+  chrome.contextMenus.create({
+    id: "openVisualization",
+    title: "Open WebGraph Visualization",
+    contexts: ["all"]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.log("Context menu item already exists");
+    } else {
+      console.log("Context menu item created successfully");
+    }
+  });
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('WebGraph extension installed');
   await dataManager.loadData();
-});
 
-// Add context menu item
-chrome.contextMenus.create({
-  id: "openVisualization",
-  title: "Open WebGraph Visualization",
-  contexts: ["all"]
+  // Remove existing context menu items
+  chrome.contextMenus.removeAll(() => {
+    createContextMenu();
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
