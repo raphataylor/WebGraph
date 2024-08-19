@@ -3,13 +3,20 @@
 <head>
   <title>WebGraph</title>
   <style>
-    body { width: 300px; padding: 10px; }
+    body { width: 300px; padding: 10px; font-family: Arial, sans-serif; }
+    input, textarea { width: 100%; margin-bottom: 10px; }
     button { margin-top: 10px; }
   </style>
 </head>
 <body>
   <h2>WebGraph</h2>
-  <button id="saveTab">Save Current Tab</button>
+  <div id="saveBookmark">
+    <input type="text" id="title" placeholder="Title">
+    <input type="text" id="url" placeholder="URL" readonly>
+    <input type="text" id="tags" placeholder="Tags (comma separated)">
+    <textarea id="notes" placeholder="Notes" rows="3"></textarea>
+    <button id="saveButton">Save Bookmark</button>
+  </div>
   <button id="openVisualization">Open Visualization</button>
   <script src="popup.js"></script>
 </body>
