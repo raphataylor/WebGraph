@@ -52,7 +52,7 @@ body, html {
     stroke-opacity: 0.6;
 }
 .node.site circle {
-    fill: #4285f4;
+    fill: #86adeb;
 }
 .node.tag circle {
     fill: #9ccea9;
