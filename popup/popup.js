@@ -22,7 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Capture snapshot of the current tab
     let snapshot = null;
     try {
+      console.log("Attempting to capture snapshot...");
       snapshot = await captureSnapshot();
+      console.log("Snapshot captured successfully. Length:", snapshot.length);
+      console.log("Snapshot preview:", snapshot.substring(0, 100) + "...");
     } catch (error) {
       console.error("Failed to capture snapshot:", error);
     }
@@ -38,11 +41,15 @@ document.addEventListener('DOMContentLoaded', function() {
       snapshot: snapshot
     };
 
+    console.log("Bookmark object created:", bookmark);
+
     try {
       const newBookmark = await dataManager.addBookmark(bookmark);
+      console.log("Bookmark added successfully:", newBookmark);
       alert('Bookmark added successfully!');
       window.close();
     } catch (error) {
+      console.error("Error adding bookmark:", error);
       alert('Error adding bookmark: ' + error.message);
     }
   });
@@ -56,8 +63,10 @@ async function captureSnapshot() {
   return new Promise((resolve, reject) => {
     chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
       if (chrome.runtime.lastError) {
+        console.error("Error in captureVisibleTab:", chrome.runtime.lastError);
         reject(chrome.runtime.lastError);
       } else {
+        console.log("Tab captured successfully");
         resolve(dataUrl);
       }
     });

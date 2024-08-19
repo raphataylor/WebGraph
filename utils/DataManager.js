@@ -40,6 +40,7 @@ class DataManager {
   
     // Add a new bookmark
     async addBookmark(bookmark) {
+      console.log("Adding bookmark:", bookmark);
       await this.loadData();
       const space = this.data.spaces[0];
       const newId = 'site' + (space.sites.length + 1);
@@ -51,8 +52,10 @@ class DataManager {
         dateCreated: bookmark.dateCreated,
         visits: bookmark.visits,
         notes: bookmark.notes,
-        favicon: bookmark.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}`
+        favicon: bookmark.favicon || `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}`,
+        snapshot: bookmark.snapshot
       };
+      console.log("New bookmark object created:", newBookmark);
       space.sites.push(newBookmark);
   
       // Add new tags if they don't exist
@@ -62,8 +65,26 @@ class DataManager {
         }
       });
   
+      console.log("Saving data...");
       await this.saveData();
+      console.log("Data saved successfully");
       return newBookmark;
+    }
+    
+    // Save data to chrome.storage.local
+    async saveData() {
+      return new Promise((resolve, reject) => {
+        console.log("Attempting to save data to chrome.storage.local");
+        chrome.storage.local.set({ 'webgraph_data': this.data }, () => {
+          if (chrome.runtime.lastError) {
+            console.error("Error saving data:", chrome.runtime.lastError);
+            reject(chrome.runtime.lastError);
+          } else {
+            console.log("Data saved successfully");
+            resolve();
+          }
+        });
+      });
     }
     
   
