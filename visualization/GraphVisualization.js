@@ -4,7 +4,7 @@ class GraphVisualization {
   constructor(element) {
     this.element = element;
     this.dataManager = new DataManager();
-    this.width = window.innerWidth;
+    this.width = window.innerWidth - 500; // Adjust for sidebars
     this.height = window.innerHeight;
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
     this.svg = null;
@@ -17,6 +17,7 @@ class GraphVisualization {
     this.nodes = [];
     this.links = [];
     this.tagMap = new Map();
+    this.selectedNode = null;
     this.initializeGraph();
     this.setupEventListeners();
   }
@@ -59,12 +60,7 @@ class GraphVisualization {
       this.highlightNodes(searchTerm);
     });
 
-    d3.select("#go-to-link").on("click", () => {
-      if (this.selectedNode && this.selectedNode.url) {
-        window.open(this.selectedNode.url, '_blank');
-      }
-    });
-
+    d3.select("#go-to-link").on("click", () => this.goToLink());
     d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
     d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
   }
@@ -268,21 +264,54 @@ class GraphVisualization {
   nodeClicked(d) {
     this.selectedNode = d;
     this.updateSidebar(d);
+    this.updateActionButtons(d);
   }
 
   updateSidebar(node) {
     const snapshotViewer = d3.select("#snapshot-viewer");
     const notesViewer = d3.select("#notes-viewer");
 
-    if (node.tags) {
+    if (node.tags) {  // It's a site node
       snapshotViewer.html(`<img src="${node.snapshot || 'placeholder.png'}" alt="Site snapshot" style="width:100%;">`);
       notesViewer.html(`<h3>${node.title}</h3><p>${node.notes || 'No notes available.'}</p>`);
-      d3.select("#go-to-link").style("display", "block");
-    } else {
+    } else {  // It's a tag node
       snapshotViewer.html("");
-      notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${node.childCount || 0} associated sites.</p>`);
-      d3.select("#go-to-link").style("display", "none");
+      notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);
     }
+  }
+
+  updateActionButtons(node) {
+    const goToLinkButton = d3.select("#go-to-link");
+    const removeBookmarkButton = d3.select("#remove-bookmark");
+
+    if (node.tags) {  // It's a site node
+      goToLinkButton.style("display", "block");
+      removeBookmarkButton.style("display", "block");
+    } else {  // It's a tag node
+      goToLinkButton.style("display", "none");
+      removeBookmarkButton.style("display", "none");
+    }
+  }
+
+  goToLink() {
+    if (this.selectedNode && this.selectedNode.url) {
+      window.open(this.selectedNode.url, '_blank');
+    }
+  }
+
+  async removeSelectedBookmark() {
+    if (this.selectedNode && this.selectedNode.tags) {  // Check if it's a site node
+      try {
+        await this.dataManager.removeBookmark(this.selectedNode.id);
+        this.loadBookmarksData();  // Reload and redraw the graph
+      } catch (error) {
+        console.error("Error removing bookmark:", error);
+      }
+    }
+  }
+
+  getAssociatedSitesCount(tagNode) {
+    return this.nodes.filter(node => node.tags && node.tags.includes(tagNode.name)).length;
   }
 }
 
