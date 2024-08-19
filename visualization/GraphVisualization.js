@@ -76,8 +76,8 @@ class GraphVisualization {
       const tags = space.tags || [];
       const sites = space.sites || [];
       
-      // Create the tagMap
-      this.tagMap = new Map(tags.map(tag => [tag.id, tag]));
+      // Create the tagMap using tag names
+      this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
       
       this.createVisualization(tags, sites);
     } catch (error) {
@@ -130,11 +130,12 @@ class GraphVisualization {
     const links = [];
     sites.forEach(site => {
       if (site.tags) {
-        site.tags.forEach(tagId => {
-          if (this.tagMap.has(tagId)) {
-            links.push({ source: site.id, target: tagId });
+        site.tags.forEach(tagName => {
+          const lowercaseTagName = tagName.toLowerCase();
+          if (this.tagMap.has(lowercaseTagName)) {
+            links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
           } else {
-            console.warn(`Tag with id ${tagId} not found for site ${site.id}`);
+            console.warn(`Tag with name "${tagName}" not found for site ${site.id}`);
           }
         });
       }
@@ -145,7 +146,7 @@ class GraphVisualization {
   createGroups(tags, sites) {
     return tags.map(tag => ({
       id: tag.id,
-      nodes: [tag, ...sites.filter(site => site.tags && site.tags.includes(tag.id))]
+      nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
     }));
   }
 

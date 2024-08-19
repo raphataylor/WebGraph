@@ -6,24 +6,24 @@ class DataManager {
     // Load data from chrome.storage.local
     async loadData() {
         return new Promise((resolve, reject) => {
-        chrome.storage.local.get('webgraph_data', (result) => {
+          chrome.storage.local.get('webgraph_data', (result) => {
             if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
+              reject(chrome.runtime.lastError);
             } else {
-            this.data = result.webgraph_data || { 
+              this.data = result.webgraph_data || { 
                 spaces: [{ 
-                id: "space1", 
-                name: "Personal Bookmarks", 
-                tags: [], 
-                sites: [] 
+                  id: "space1", 
+                  name: "Personal Bookmarks", 
+                  tags: [], 
+                  sites: [] 
                 }] 
-            };
-            console.log('Loaded data:', this.data);  // Log the loaded data
-            resolve(this.data);
+              };
+              console.log('Loaded data:', JSON.stringify(this.data, null, 2));  // Log the loaded data
+              resolve(this.data);
             }
+          });
         });
-        });
-    }
+      }
   
     // Save data to chrome.storage.local
     async saveData() {
@@ -40,32 +40,33 @@ class DataManager {
   
     // Add a new bookmark
     async addBookmark(bookmark) {
-      await this.loadData();
-      const space = this.data.spaces[0];
-      const newId = 'site' + (space.sites.length + 1);
-      const newBookmark = {
-        id: newId,
-        title: bookmark.title,
-        url: bookmark.url,
-        tags: bookmark.tags,
-        dateCreated: bookmark.dateCreated,
-        visits: bookmark.visits,
-        notes: bookmark.notes,
-        snapshot: bookmark.snapshot,
-        favicon: bookmark.favicon
-      };
-      space.sites.push(newBookmark);
-  
-      // Add new tags if they don't exist
-      bookmark.tags.forEach(tag => {
-        if (!space.tags.some(t => t.name === tag)) {
-          space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tag });
-        }
-      });
-  
-      await this.saveData();
-      return newBookmark;
-    }
+        await this.loadData();
+        const space = this.data.spaces[0];
+        const newId = 'site' + (space.sites.length + 1);
+        const newBookmark = {
+          id: newId,
+          title: bookmark.title,
+          url: bookmark.url,
+          tags: bookmark.tags,  // Now storing tag names instead of IDs
+          dateCreated: bookmark.dateCreated,
+          visits: bookmark.visits,
+          notes: bookmark.notes,
+          snapshot: bookmark.snapshot,
+          favicon: bookmark.favicon
+        };
+        space.sites.push(newBookmark);
+    
+        // Add new tags if they don't exist
+        bookmark.tags.forEach(tagName => {
+          if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+            space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
+          }
+        });
+    
+        await this.saveData();
+        return newBookmark;
+      }
+    
   
     // Remove a bookmark
     async removeBookmark(bookmarkId) {
