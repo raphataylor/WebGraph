@@ -33,15 +33,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "addBookmark") {
-    try {
-      const newBookmark = await dataManager.addBookmark(request.bookmark);
-      sendResponse({success: true, bookmark: newBookmark});
-    } catch (error) {
-      console.error('Error adding bookmark:', error);
-      sendResponse({success: false, error: error.message});
-    }
+    dataManager.addBookmark(request.bookmark)
+      .then(newBookmark => sendResponse({success: true, bookmark: newBookmark}))
+      .catch(error => {
+        console.error('Error adding bookmark:', error);
+        sendResponse({success: false, error: error.message});
+      });
     return true;  // Indicates that we will send a response asynchronously
   }
 });

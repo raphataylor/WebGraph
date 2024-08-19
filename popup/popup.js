@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const url = document.getElementById('url').value;
     const favicon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`;
 
+    // Capture snapshot of the current tab
+    let snapshot = null;
+    try {
+      snapshot = await captureSnapshot();
+    } catch (error) {
+      console.error("Failed to capture snapshot:", error);
+    }
+
     const bookmark = {
       title: document.getElementById('title').value,
       url: url,
@@ -26,7 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
       notes: document.getElementById('notes').value,
       dateCreated: new Date().toISOString().split('T')[0],
       visits: 1,
-      favicon: favicon
+      favicon: favicon,
+      snapshot: snapshot
     };
 
     try {
@@ -42,3 +51,15 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.tabs.create({url: chrome.runtime.getURL('visualization/GraphVisualization.html')});
   });
 });
+
+async function captureSnapshot() {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(dataUrl);
+      }
+    });
+  });
+}

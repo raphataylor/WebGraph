@@ -277,10 +277,27 @@ class GraphVisualization {
   updateSidebar(node) {
     const snapshotViewer = d3.select("#snapshot-viewer");
     const notesViewer = d3.select("#notes-viewer");
-
+  
     if (node.tags) {  // It's a site node
-      snapshotViewer.html(`<img src="${node.snapshot || 'placeholder.png'}" alt="Site snapshot" style="width:100%;">`);
-      notesViewer.html(`<h3>${node.title}</h3><p>${node.notes || ''}</p>`);
+      if (node.snapshot) {
+        snapshotViewer.html(`<img src="${node.snapshot}" alt="Site snapshot" style="width:100%;">`);
+      } else {
+        // Use favicon as a small thumbnail if snapshot is not available
+        snapshotViewer.html(`
+          <div style="text-align: center; padding: 20px;">
+            <img src="${node.favicon}" alt="Site favicon" style="width:32px; height:32px;">
+            <p>No snapshot available</p>
+          </div>
+        `);
+      }
+      notesViewer.html(`
+        <h3>${node.title}</h3>
+        <p><strong>URL:</strong> <a href="${node.url}" target="_blank">${node.url}</a></p>
+        <p><strong>Tags:</strong> ${node.tags.join(', ')}</p>
+        <p><strong>Date Created:</strong> ${node.dateCreated}</p>
+        <p><strong>Visits:</strong> ${node.visits}</p>
+        <p><strong>Notes:</strong> ${node.notes || 'No notes available'}</p>
+      `);
     } else {  // It's a tag node
       snapshotViewer.html("");
       notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);

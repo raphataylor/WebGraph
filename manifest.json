@@ -7,7 +7,11 @@
       "storage",
       "tabs",
       "contextMenus",
-      "activeTab"
+      "activeTab",
+      "scripting"
+    ],
+    "host_permissions": [
+    "<all_urls>"
     ],
     "background": {
       "service_worker": "background.js",
@@ -29,10 +33,16 @@
     "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'"
     },
+    "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/html2canvas.min.js", "contentScript.js"]
+    }
+    ],
     "web_accessible_resources": [
-      {
-        "resources": ["lib/*", "data/*"],
-        "matches": ["<all_urls>"]
-      }
-    ]
-  }
+    {
+      "resources": ["lib/*", "data/*", "visualization/GraphVisualization.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
