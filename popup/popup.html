@@ -1,23 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>WebGraph</title>
-  <style>
-    body { width: 300px; padding: 10px; font-family: Arial, sans-serif; }
-    input, textarea { width: 100%; margin-bottom: 10px; }
-    button { margin-top: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGraph Bookmark</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h2>WebGraph</h2>
-  <div id="saveBookmark">
-    <input type="text" id="title" placeholder="Title">
-    <input type="text" id="url" placeholder="URL" readonly>
-    <input type="text" id="tags" placeholder="Tags (comma separated)">
-    <textarea id="notes" placeholder="Notes" rows="3"></textarea>
-    <button id="saveButton">Save Bookmark</button>
-  </div>
-  <button id="openVisualization">Open Visualization</button>
-  <script src="popup.js"></script>
+    <div class="container">
+        <h1>Add Bookmark to WebGraph</h1>
+        <form id="bookmarkForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="url">URL:</label>
+                <input type="url" id="url" name="url" required>
+            </div>
+            <div class="form-group">
+                <label for="tags">Tags (comma-separated):</label>
+                <input type="text" id="tags" name="tags">
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" name="notes"></textarea>
+            </div>
+            <button type="submit">Save Bookmark</button>
+        </form>
+        <button id="openVisualization">Open Visualization</button>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>

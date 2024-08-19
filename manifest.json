@@ -6,7 +6,8 @@
     "permissions": [
       "storage",
       "tabs",
-      "contextMenus"
+      "contextMenus",
+      "activeTab"
     ],
     "background": {
       "service_worker": "background.js"
@@ -23,5 +24,14 @@
       "16": "assets/icon16.png",
       "48": "assets/icon48.png",
       "128": "assets/icon128.png"
-    }
+    },
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["lib/*", "data/*"],
+        "matches": ["<all_urls>"]
+      }
+    ]
   }

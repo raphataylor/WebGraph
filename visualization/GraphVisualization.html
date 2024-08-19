@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGraph Visualization</title>
+    <script src="../lib/d3.min.js"></script>
+    <link rel="stylesheet" href="GraphVisualization.css">
+</head>
+<body>
+    <div id="left-sidebar" class="sidebar">
+        <h2>Graph Settings</h2>
+        <label for="node-size">Node Size:</label>
+        <input type="range" id="node-size" min="1" max="20" value="10">
+        <label for="link-size">Link Size:</label>
+        <input type="range" id="link-size" min="1" max="10" value="2">
+        <label for="charge">Charge:</label>
+        <input type="range" id="charge" min="-1000" max="0" value="-200">
+        <label for="link-distance">Link Distance:</label>
+        <input type="range" id="link-distance" min="10" max="200" value="50">
+    </div>
+    <div id="graph"></div>
+    <div id="right-sidebar" class="sidebar">
+        <div id="snapshot-viewer"></div>
+        <div id="notes-viewer"></div>
+        <button id="go-to-link">Go to Link</button>
+    </div>
+    <input type="text" id="search-bar" placeholder="Search nodes...">
+    <script src="GraphVisualization.js" type="module"></script>
+</body>
+</html>
