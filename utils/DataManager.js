@@ -28,14 +28,39 @@ class DataManager {
     // Save data to chrome.storage.local
     async saveData() {
       return new Promise((resolve, reject) => {
+        console.log("Attempting to save data to chrome.storage.local");
         chrome.storage.local.set({ 'webgraph_data': this.data }, () => {
           if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
+            console.error("Error saving data:", chrome.runtime.lastError);
+            if (chrome.runtime.lastError.message.includes("QUOTA_BYTES")) {
+              console.log("Storage quota exceeded. Attempting to remove oldest snapshots...");
+              this.removeOldestSnapshots().then(() => {
+                this.saveData().then(resolve).catch(reject);
+              }).catch(reject);
+            } else {
+              reject(chrome.runtime.lastError);
+            }
           } else {
+            console.log("Data saved successfully");
             resolve();
           }
         });
       });
+    }
+
+    async removeOldestSnapshots() {
+      const space = this.data.spaces[0];
+      space.sites.sort((a, b) => new Date(a.dateCreated) - new Date(b.dateCreated));
+      
+      let removed = 0;
+      while (removed < 5 && space.sites.length > removed) {
+        if (space.sites[removed].snapshot) {
+          delete space.sites[removed].snapshot;
+          removed++;
+        }
+      }
+
+      console.log(`Removed snapshots from ${removed} oldest bookmarks`);
     }
   
     // Add a new bookmark

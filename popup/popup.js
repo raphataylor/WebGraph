@@ -19,15 +19,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const url = document.getElementById('url').value;
     const favicon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`;
 
-    // Capture snapshot of the current tab
+    // Capture and compress snapshot of the current tab
     let snapshot = null;
     try {
       console.log("Attempting to capture snapshot...");
-      snapshot = await captureSnapshot();
-      console.log("Snapshot captured successfully. Length:", snapshot.length);
-      console.log("Snapshot preview:", snapshot.substring(0, 100) + "...");
+      const originalSnapshot = await captureSnapshot();
+      console.log("Snapshot captured successfully. Original length:", originalSnapshot.length);
+      
+      snapshot = await compressImage(originalSnapshot, 600, 1);
+      console.log("Snapshot compressed. New length:", snapshot.length);
+      console.log("Compressed snapshot preview:", snapshot.substring(0, 100) + "...");
     } catch (error) {
-      console.error("Failed to capture snapshot:", error);
+      console.error("Failed to capture or compress snapshot:", error);
     }
 
     const bookmark = {
@@ -70,5 +73,31 @@ async function captureSnapshot() {
         resolve(dataUrl);
       }
     });
+  });
+}
+
+async function compressImage(base64String, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height *= maxWidth / width;
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = base64String;
   });
 }
