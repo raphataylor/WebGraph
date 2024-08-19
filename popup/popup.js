@@ -83,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const newBookmark = await dataManager.addBookmark(bookmark);
       console.log("Bookmark added successfully:", newBookmark);
       alert('Bookmark added successfully!');
-      window.close();
     } catch (error) {
       console.error("Error adding bookmark:", error);
       alert('Error adding bookmark: ' + error.message);

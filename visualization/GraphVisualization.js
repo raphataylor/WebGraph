@@ -280,7 +280,13 @@ class GraphVisualization {
   
     if (node.tags) {  // It's a site node
       if (node.snapshot) {
-        snapshotViewer.html(`<img src="${node.snapshot}" alt="Site snapshot" style="width:100%;">`);
+        snapshotViewer.html(`
+          <div class="snapshot-container">
+            <img src="${node.snapshot}" alt="Site snapshot" class="snapshot-image">
+            <button class="snapshot-resize" data-state="small">+</button>
+          </div>
+        `);
+        this.setupSnapshotResize();
       } else {
         // Use favicon as a small thumbnail if snapshot is not available
         snapshotViewer.html(`
@@ -302,6 +308,36 @@ class GraphVisualization {
       snapshotViewer.html("");
       notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);
     }
+  }
+
+  setupSnapshotResize() {
+    const resizeButton = document.querySelector('.snapshot-resize');
+    const snapshotContainer = document.querySelector('.snapshot-container');
+    const snapshotImage = document.querySelector('.snapshot-image');
+
+    resizeButton.addEventListener('click', () => {
+      const currentState = resizeButton.getAttribute('data-state');
+      if (currentState === 'small') {
+        snapshotContainer.style.position = 'fixed';
+        snapshotContainer.style.top = '10%';
+        snapshotContainer.style.left = '10%';
+        snapshotContainer.style.width = '80%';
+        snapshotContainer.style.height = '80%';
+        snapshotContainer.style.zIndex = '1000';
+        snapshotContainer.style.background = 'white';
+        snapshotContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        snapshotImage.style.width = '100%';
+        snapshotImage.style.height = '100%';
+        snapshotImage.style.objectFit = 'contain';
+        resizeButton.textContent = '-';
+        resizeButton.setAttribute('data-state', 'large');
+      } else {
+        snapshotContainer.style = '';
+        snapshotImage.style = '';
+        resizeButton.textContent = '+';
+        resizeButton.setAttribute('data-state', 'small');
+      }
+    });
   }
 
   updateActionButtons(node) {
