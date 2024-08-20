@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const originalSnapshot = await captureSnapshot();
       console.log("Snapshot captured successfully. Original length:", originalSnapshot.length);
       
-      snapshot = await compressImage(originalSnapshot, 600, 1);
+      snapshot = await compressImage(originalSnapshot, 1200, 1);
       console.log("Snapshot compressed. New length:", snapshot.length);
       console.log("Compressed snapshot preview:", snapshot.substring(0, 100) + "...");
     } catch (error) {
