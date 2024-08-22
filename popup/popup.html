@@ -8,7 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>Save Bookmark</h1>
+        <h1>
+            <img src="../assets/WebGraphIcon.png" alt="WebGraph Icon" style="vertical-align: middle; margin-right: 8px; width: 1.4em; height: 1.4em;">
+            Save Bookmark
+        </h1>
         <form id="bookmarkForm">
             <div class="form-group">
                 <label for="title">Title:</label>
@@ -27,10 +30,12 @@
                 <label for="notes">Notes:</label>
                 <textarea id="notes" rows="5"></textarea>
             </div>
-            <button type="submit">Save Bookmark</button>
+            <div class="button-group">
+                <button type="submit">Save Bookmark</button>
+                <button id="openVisualization">Open Visualization</button>
+            </div>
         </form>
-        <button id="openVisualization">Open Visualization</button>
-    </div>
+    </div>    
     <script src="popup.js" type="module"></script>
 </body>
 </html>
