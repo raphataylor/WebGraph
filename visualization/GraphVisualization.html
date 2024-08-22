@@ -8,7 +8,10 @@
 </head>
 <body>
     <div id="left-sidebar" class="sidebar">
-        <h2>Graph Settings</h2>
+        <h2>
+            <img src="./WebGraphIcon.png" alt="WebGraph Icon" style="vertical-align: middle; margin-right: 8px; width: 1.4em; height: 1.4em;">
+            WebGraph
+        </h2>
         <label for="node-size">Node Size:</label>
         <input type="range" id="node-size" min="1" max="20" value="10">
         
@@ -33,7 +36,7 @@
 
     <div id="bottom-bar">
         <button id="clear-all-bookmarks">Clear All Bookmarks</button>
-        <input type="text" id="search-bar" placeholder="Search nodes...">
+        <input type="text" id="search-bar" placeholder="Search nodes... (work in progress)">
     </div>
 
     <script src="../lib/d3.min.js"></script>
