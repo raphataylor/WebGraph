@@ -274,28 +274,35 @@ class GraphVisualization {
     this.updateActionButtons(d);
   }
 
-  updateSidebar(node) {
+  async updateSidebar(node) {
     const snapshotViewer = d3.select("#snapshot-viewer");
     const notesViewer = d3.select("#notes-viewer");
   
     if (node.tags) {  // It's a site node
-      if (node.snapshot) {
-        snapshotViewer.html(`
-          <div class="snapshot-container">
-            <img src="${node.snapshot}" alt="Site snapshot" class="snapshot-image">
-            <button class="snapshot-resize" data-state="small">+</button>
-          </div>
-        `);
-        this.setupSnapshotResize();
-      } else {
-        // Use favicon as a small thumbnail if snapshot is not available
-        snapshotViewer.html(`
-          <div style="text-align: center; padding: 20px;">
-            <img src="${node.favicon}" alt="Site favicon" style="width:32px; height:32px;">
-            <p>No snapshot available</p>
-          </div>
-        `);
+      try {
+        const snapshot = await this.dataManager.getSnapshot(node.id);
+        if (snapshot) {
+          snapshotViewer.html(`
+            <div class="snapshot-container">
+              <img src="${snapshot}" alt="Site snapshot" class="snapshot-image">
+              <button class="snapshot-resize" data-state="small">+</button>
+            </div>
+          `);
+          this.setupSnapshotResize();
+        } else {
+          // Use favicon as a small thumbnail if snapshot is not available
+          snapshotViewer.html(`
+            <div style="text-align: center; padding: 20px;">
+              <img src="${node.favicon}" alt="Site favicon" style="width:32px; height:32px;">
+              <p>No snapshot available</p>
+            </div>
+          `);
+        }
+      } catch (error) {
+        console.error("Error fetching snapshot:", error);
+        snapshotViewer.html(`<p>Error loading snapshot</p>`);
       }
+  
       notesViewer.html(`
         <h3>${node.title}</h3>
         <p><strong>URL:</strong> <a href="${node.url}" target="_blank">${node.url}</a></p>
