@@ -44,3 +44,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;  // Indicates that we will send a response asynchronously
   }
 });
+
+// Handle keyboard shortcut command
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "open-popup") {
+    chrome.action.openPopup();
+  }
+});
