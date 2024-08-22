@@ -308,7 +308,6 @@ class GraphVisualization {
         <p><strong>URL:</strong> <a href="${node.url}" target="_blank">${node.url}</a></p>
         <p><strong>Tags:</strong> ${node.tags.join(', ')}</p>
         <p><strong>Date Created:</strong> ${node.dateCreated}</p>
-        <p><strong>Visits:</strong> ${node.visits}</p>
         <p><strong>Notes:</strong> ${node.notes || 'No notes available'}</p>
       `);
     } else {  // It's a tag node
