@@ -91,9 +91,15 @@ class GraphVisualization {
       this.updateSimulation();
     });
 
-    d3.select("#search-bar").on("input", () => {
-      const searchTerm = d3.select("#search-bar").property("value").toLowerCase();
+    const searchBar = document.getElementById('search-bar');
+    searchBar.addEventListener('input', (event) => {
+      const searchTerm = event.target.value.toLowerCase();
       this.highlightNodes(searchTerm);
+    });
+
+    searchBar.addEventListener('blur', () => {
+      searchBar.value = ''; // Clear the search bar
+      this.highlightNodes(''); // Clear all highlighting
     });
 
     d3.select("#go-to-link").on("click", () => this.goToLink());
@@ -311,6 +317,9 @@ class GraphVisualization {
   highlightNodes(searchTerm) {
     this.container.selectAll(".node")
       .classed("highlighted", d => {
+        if (searchTerm === '') {
+          return false; // Remove highlighting when search term is empty
+        }
         const nodeText = (d.name || d.title || "").toLowerCase();
         return nodeText.includes(searchTerm);
       });

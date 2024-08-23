@@ -4,7 +4,8 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    font-family: sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
 }
 
 #graph {
@@ -125,34 +126,71 @@ body, html {
     stroke: #fff;
     stroke-width: 1.5px;
 }
+
 .node text {
     font-size: 10px;
     fill: #333;
     pointer-events: none;
 }
+
 .link {
-    stroke: #999;
+    stroke: #b3b3b3;
     stroke-opacity: 0.6;
 }
+
 .node.site circle {
     fill: #86adeb;
 }
+
 .node.tag circle {
     fill: #9ccea9;
 }
+
 .group {
-    stroke: #d96262;
+    stroke: #b3b3b3;
     stroke-width: 1.5px;
     opacity: 0.2;
 }
 
-/* Hover effects */
-.node:hover circle {
-    stroke: #333;
-    stroke-width: 2px;
+/* Highlight styles */
+.highlighted {
+    stroke: #2680eb;
+    stroke-width: 3px;
 }
-.node:hover text {
-    font-weight: bold;
+
+.highlighted circle {
+    fill: #e3f2fd;
+}
+
+.highlighted text {
+    font-weight: normal;
+    fill: #000000;
+    font-size: 12px;
+    paint-order: stroke;
+    stroke: #ee6d6d;
+    stroke-width: 2px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+}
+
+.node.site.highlighted circle {
+    fill: #e3f2fd;
+}
+
+.node.tag.highlighted circle {
+    fill: #e8f5e9;
+}
+
+/* Hover effects */
+.node:hover circle,
+.highlighted:hover circle {
+    stroke: #1473e6;
+    stroke-width: 3px;
+}
+
+.node:hover text,
+.highlighted:hover text {
+    font-weight: 500;
 }
 
 /* Favicon styles */
@@ -165,26 +203,14 @@ body, html {
     margin-top: 0;
     color: #333;
 }
+
 .sidebar label {
     display: block;
     margin-top: 10px;
     color: #666;
 }
+
 .sidebar input[type="range"] {
     width: 100%;
     margin-top: 5px;
-}
-#go-to-link {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin-top: 20px;
-    background-color: #4285f4;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-#go-to-link:hover {
-    background-color: #3b78e7;
 }
