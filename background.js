@@ -16,9 +16,17 @@ function createContextMenu() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('WebGraph extension installed');
-  await dataManager.loadData();
+  
+  if (details.reason === 'install') {
+    // Load initial data on first install
+    await dataManager.loadInitialData();
+    console.log('Initial data loaded successfully');
+  } else {
+    // For updates or other cases, load existing data
+    await dataManager.loadData();
+  }
 
   // Remove existing context menu items
   chrome.contextMenus.removeAll(() => {

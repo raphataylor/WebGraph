@@ -24,21 +24,27 @@ class DataManager {
     });
   }
 
+  async loadInitialData() {
+    const response = await fetch(chrome.runtime.getURL('data/bookmarks.json'));
+    const initialData = await response.json();
+    this.data = initialData;
+    await this.saveData();
+    return this.data;
+  }
+
   async loadData() {
     await this.initDB();
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get('webgraph_data', (result) => {
+      chrome.storage.local.get('webgraph_data', async (result) => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
-          this.data = result.webgraph_data || { 
-            spaces: [{ 
-              id: "space1", 
-              name: "Personal Bookmarks", 
-              tags: [], 
-              sites: [] 
-            }] 
-          };
+          if (!result.webgraph_data) {
+            // If no data exists, load the initial data
+            this.data = await this.loadInitialData();
+          } else {
+            this.data = result.webgraph_data;
+          }
           console.log('Loaded data:', JSON.stringify(this.data, null, 2));
           resolve(this.data);
         }
