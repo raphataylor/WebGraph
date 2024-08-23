@@ -14,6 +14,12 @@ class GraphVisualization {
     this.linkSize = 2;
     this.charge = -200;
     this.linkDistance = 50;
+    this.collisionStrength = 0.5;
+    this.gravityStrength = 0.1;
+    this.alpha = 1;
+    this.alphaDecay = 0.0228;
+    this.alphaMin = 0.001;
+    this.velocityDecay = 0.4;
     this.nodes = [];
     this.links = [];
     this.tagMap = new Map();
@@ -52,6 +58,36 @@ class GraphVisualization {
 
     d3.select("#link-distance").on("input", () => {
       this.linkDistance = +d3.select("#link-distance").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#collision-strength").on("input", () => {
+      this.collisionStrength = +d3.select("#collision-strength").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#gravity-strength").on("input", () => {
+      this.gravityStrength = +d3.select("#gravity-strength").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#alpha").on("input", () => {
+      this.alpha = +d3.select("#alpha").property("value");
+      this.simulation.alpha(this.alpha);
+    });
+
+    d3.select("#alpha-decay").on("input", () => {
+      this.alphaDecay = +d3.select("#alpha-decay").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#alpha-min").on("input", () => {
+      this.alphaMin = +d3.select("#alpha-min").property("value");
+      this.updateSimulation();
+    });
+
+    d3.select("#velocity-decay").on("input", () => {
+      this.velocityDecay = +d3.select("#velocity-decay").property("value");
       this.updateSimulation();
     });
 
@@ -113,7 +149,11 @@ class GraphVisualization {
       .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
       .force("charge", d3.forceManyBody().strength(this.charge))
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-      .force("collision", d3.forceCollide().radius(this.nodeSize * 3));
+      .force("collision", d3.forceCollide().radius(this.nodeSize * 3).strength(this.collisionStrength))
+      .alpha(this.alpha)
+      .alphaDecay(this.alphaDecay)
+      .alphaMin(this.alphaMin)
+      .velocityDecay(this.velocityDecay);
 
     this.drawGroups(groups);
     this.drawLinks(this.links);
@@ -259,7 +299,12 @@ class GraphVisualization {
     this.simulation
       .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
       .force("charge", d3.forceManyBody().strength(this.charge))
-      .alpha(1)
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(this.gravityStrength))
+      .force("collision", d3.forceCollide().radius(this.nodeSize * 3).strength(this.collisionStrength))
+      .alpha(this.alpha)
+      .alphaDecay(this.alphaDecay)
+      .alphaMin(this.alphaMin)
+      .velocityDecay(this.velocityDecay)
       .restart();
   }
 
