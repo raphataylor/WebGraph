@@ -127,6 +127,8 @@ class GraphVisualization {
     sites.forEach(site => {
       if (site.tags) {
         site.tags.forEach(tagName => {
+          // debugging console log
+          console.log(`Processing site: ${site.title}, tags: ${site.tags}`);
           const lowercaseTagName = tagName.toLowerCase();
           if (this.tagMap.has(lowercaseTagName)) {
             links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
@@ -157,6 +159,7 @@ class GraphVisualization {
   }
 
   drawLinks(links) {
+    console.log(`Drawing ${links.length} links`);
     this.container.selectAll(".link")
       .data(links)
       .enter().append("line")
