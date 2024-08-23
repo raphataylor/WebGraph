@@ -305,6 +305,7 @@ class GraphVisualization {
       .alphaDecay(this.alphaDecay)
       .alphaMin(this.alphaMin)
       .velocityDecay(this.velocityDecay)
+      .restart();
   }
 
   highlightNodes(searchTerm) {
