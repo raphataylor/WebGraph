@@ -23,6 +23,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     // Load initial data on first install
     await dataManager.loadInitialData();
     console.log('Initial data loaded successfully');
+    
+    // Set flag to show welcome screen
+    chrome.storage.local.set({ showWelcomeScreen: true });
   } else {
     // For updates or other cases, load existing data
     await dataManager.loadData();

@@ -493,10 +493,14 @@ class GraphVisualization {
     return this.nodes.filter(node => node.tags && node.tags.includes(tagNode.name)).length;
   }
 
-  checkAndShowWelcomeScreen() {
-    if (this.showWelcomeScreen) {
-      this.displayWelcomeScreen();
-    }
+  async checkAndShowWelcomeScreen() {
+    chrome.storage.local.get(['showWelcomeScreen'], (result) => {
+      if (result.showWelcomeScreen) {
+        this.displayWelcomeScreen();
+        // Set the flag to false after showing the welcome screen
+        chrome.storage.local.set({ showWelcomeScreen: false });
+      }
+    });
   }
 
   displayWelcomeScreen() {
@@ -512,6 +516,10 @@ class GraphVisualization {
           <li>Drag nodes to rearrange the graph</li>
           <li>Use the search bar to find specific nodes</li>
           <li>Adjust graph settings in the left sidebar</li>
+          <li>Add bookmarks by browsing the web and hitting Ctrl + Shift + Y or Cmd + Shift + Y for MacOS</li>
+          <li>Add multiple tags to see a self-organising, semantic structure build up as you add more bookmarks</li>
+          <li>An example data set has been pre-loaded so you can get a feel for how the graph can look</li>
+          <li>Click "Clear All Bookmarks" to begin your own graph!</li>
         </ul>
         <button id="close-welcome">Got it, let's start!</button>
       </div>
