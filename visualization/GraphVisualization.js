@@ -37,8 +37,9 @@ class GraphVisualization {
       .call(d3.zoom().on("zoom", (event) => {
         this.container.attr("transform", event.transform);
       }));
-
+  
     this.container = this.svg.append("g");
+    this.createVisualization();
     this.loadBookmarksData();
   }
 
@@ -116,10 +117,17 @@ class GraphVisualization {
       const tags = space.tags || [];
       const sites = space.sites || [];
       
-      // Create the tagMap using tag names
       this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
       
-      this.createVisualization(tags, sites);
+      this.nodes = [...tags, ...sites];
+      this.links = this.createLinks(sites);
+      const groups = this.createGroups(tags, sites);
+  
+      if (!this.simulation) {
+        this.createVisualization();
+      }
+  
+      this.updateVisualization(groups);
     } catch (error) {
       console.error("Error loading data:", error);
     }
@@ -140,21 +148,18 @@ class GraphVisualization {
     if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
       try {
         await this.dataManager.clearAll();
-        this.loadBookmarksData();  // Reload and redraw the graph
+        this.nodes = [];
+        this.links = [];
+        this.updateVisualization();
       } catch (error) {
         console.error("Error clearing bookmarks:", error);
       }
     }
   }
 
-  createVisualization(tags, sites) {
-    this.nodes = [...tags, ...sites];
-    this.links = this.createLinks(sites);
-
-    const groups = this.createGroups(tags, sites);
-
-    this.simulation = d3.forceSimulation(this.nodes)
-      .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
+  createVisualization() {
+    this.simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).distance(this.linkDistance))
       .force("charge", d3.forceManyBody().strength(this.charge))
       .force("center", d3.forceCenter(this.width / 2, this.height / 2))
       .force("collision", d3.forceCollide().radius(this.nodeSize * 3).strength(this.collisionStrength))
@@ -162,11 +167,7 @@ class GraphVisualization {
       .alphaDecay(this.alphaDecay)
       .alphaMin(this.alphaMin)
       .velocityDecay(this.velocityDecay);
-
-    this.drawGroups(groups);
-    this.drawLinks(this.links);
-    this.drawNodes(this.nodes);
-
+  
     this.simulation.on("tick", () => this.ticked());
   }
 
@@ -265,16 +266,17 @@ class GraphVisualization {
       .attr("y1", d => d.source.y)
       .attr("x2", d => d.target.x)
       .attr("y2", d => d.target.y);
-
+  
     this.container.selectAll(".node")
       .attr("transform", d => `translate(${d.x},${d.y})`);
-
+  
     this.container.selectAll(".group")
-      .attr("d", this.groupPath);
+      .attr("d", this.groupPath.bind(this));
   }
 
   groupPath(d) {
-    const hull = d3.polygonHull(d.nodes.map(n => [n.x, n.y]));
+    if (!d || !d.nodes || d.nodes.length < 2) return "";
+    const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
     return hull ? `M${hull.join("L")}Z` : "";
   }
 
@@ -295,12 +297,92 @@ class GraphVisualization {
     d.fy = null;
   }
 
-  updateVisualization() {
-    this.container.selectAll(".node circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-
-    this.container.selectAll(".link")
+  updateVisualization(groups) {
+    if (!this.simulation) {
+      console.error("Simulation not initialized");
+      return;
+    }
+  
+    // Update groups
+    const groupSelection = this.container.selectAll('.group')
+      .data(groups || [], d => d.id);
+  
+    groupSelection.exit().remove();
+  
+    const groupEnter = groupSelection.enter()
+      .append('path')
+      .attr('class', 'group');
+  
+    groupEnter.merge(groupSelection)
+      .style("fill", (d, i) => this.color(i))
+      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
+      .style("opacity", 0.3)
+      .attr("d", this.groupPath.bind(this));
+  
+    // Update links
+    const linkSelection = this.container.selectAll(".link")
+      .data(this.links, d => `${d.source.id}-${d.target.id}`);
+  
+    linkSelection.exit().remove();
+  
+    linkSelection.enter()
+      .append("line")
+      .attr("class", "link")
+      .merge(linkSelection)
       .attr("stroke-width", this.linkSize);
+  
+    // Update nodes
+    const nodeSelection = this.container.selectAll(".node")
+      .data(this.nodes, d => d.id);
+  
+    nodeSelection.exit().remove();
+  
+    const nodeEnter = nodeSelection.enter()
+      .append("g")
+      .attr("class", d => "node " + (d.tags ? "site" : "tag"))
+      .call(d3.drag()
+        .on("start", (event, d) => this.dragstarted(event, d))
+        .on("drag", (event, d) => this.dragged(event, d))
+        .on("end", (event, d) => this.dragended(event, d)))
+      .on("click", (event, d) => this.nodeClicked(d));
+  
+    nodeEnter.append("circle")
+      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+  
+    nodeEnter.append("text")
+      .attr("dy", ".35em")
+      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+      .text(d => d.name || d.title);
+  
+    nodeEnter.filter(d => d.tags && d.favicon)
+      .append("image")
+      .attr("xlink:href", d => d.favicon)
+      .attr("x", -this.nodeSize * 0.8)
+      .attr("y", -this.nodeSize * 0.8)
+      .attr("width", this.nodeSize * 1.6)
+      .attr("height", this.nodeSize * 1.6);
+  
+    nodeEnter.append("title")
+      .text(d => {
+        if (d.tags) {
+          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
+        } else {
+          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
+        }
+      });
+  
+    const nodeUpdate = nodeEnter.merge(nodeSelection);
+  
+    nodeUpdate.select("circle")
+      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+  
+    nodeUpdate.select("text")
+      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+      .text(d => d.name || d.title);
+  
+    this.simulation.nodes(this.nodes);
+    this.simulation.force("link").links(this.links);
+    this.simulation.alpha(1).restart();
   }
 
   updateSimulation() {
@@ -482,7 +564,16 @@ class GraphVisualization {
     if (this.selectedNode && this.selectedNode.tags) {  // Check if it's a site node
       try {
         await this.dataManager.removeBookmark(this.selectedNode.id);
-        this.loadBookmarksData();  // Reload and redraw the graph
+        this.nodes = this.nodes.filter(node => node.id !== this.selectedNode.id);
+        this.links = this.links.filter(link => link.source.id !== this.selectedNode.id && link.target.id !== this.selectedNode.id);
+        
+        // Recalculate groups
+        const tags = this.nodes.filter(node => !node.tags);
+        const sites = this.nodes.filter(node => node.tags);
+        const groups = this.createGroups(tags, sites);
+        
+        this.selectedNode = null;
+        this.updateVisualization(groups);
       } catch (error) {
         console.error("Error removing bookmark:", error);
       }
