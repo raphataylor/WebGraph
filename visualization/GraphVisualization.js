@@ -24,8 +24,10 @@ class GraphVisualization {
     this.links = [];
     this.tagMap = new Map();
     this.selectedNode = null;
+    this.showWelcomeScreen = true;
     this.initializeGraph();
     this.setupEventListeners();
+    this.checkAndShowWelcomeScreen();
   }
 
   initializeGraph() {
@@ -435,6 +437,37 @@ class GraphVisualization {
 
   getAssociatedSitesCount(tagNode) {
     return this.nodes.filter(node => node.tags && node.tags.includes(tagNode.name)).length;
+  }
+
+  checkAndShowWelcomeScreen() {
+    if (this.showWelcomeScreen) {
+      this.displayWelcomeScreen();
+    }
+  }
+
+  displayWelcomeScreen() {
+    const welcomeScreen = document.createElement('div');
+    welcomeScreen.id = 'welcome-screen';
+    welcomeScreen.innerHTML = `
+      <div class="welcome-content">
+        <h2>Welcome to WebGraph!</h2>
+        <p>Here's a quick guide to get you started:</p>
+        <ul>
+          <li>Pan and zoom the graph using your mouse or touchpad</li>
+          <li>Click on nodes to view details in the sidebar</li>
+          <li>Drag nodes to rearrange the graph</li>
+          <li>Use the search bar to find specific nodes</li>
+          <li>Adjust graph settings in the left sidebar</li>
+        </ul>
+        <button id="close-welcome">Got it, let's start!</button>
+      </div>
+    `;
+    document.body.appendChild(welcomeScreen);
+
+    document.getElementById('close-welcome').addEventListener('click', () => {
+      welcomeScreen.style.display = 'none';
+      this.showWelcomeScreen = false;
+    });
   }
 }
 
