@@ -365,13 +365,67 @@ class GraphVisualization {
       notesViewer.html(`
         <h3>${node.title}</h3>
         <p><strong>URL:</strong> <a href="${node.url}" target="_blank">${node.url}</a></p>
-        <p><strong>Tags:</strong> ${node.tags.join(', ')}</p>
+        <div id="tag-editor">
+          <p><strong>Tags:</strong></p>
+          <div id="tag-container"></div>
+          <input type="text" id="tag-input" placeholder="Add a tag...">
+        </div>
         <p><strong>Date Created:</strong> ${node.dateCreated}</p>
         <p><strong>Notes:</strong> ${node.notes || 'No notes available'}</p>
       `);
+
+      this.setupTagEditor(node);
     } else {  // It's a tag node
       snapshotViewer.html("");
       notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);
+    }
+  }
+
+  setupTagEditor(node) {
+    const tagContainer = document.getElementById('tag-container');
+    const tagInput = document.getElementById('tag-input');
+
+    this.renderTags(node, tagContainer);
+
+    tagInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const newTag = tagInput.value.trim();
+        if (newTag && !node.tags.includes(newTag)) {
+          node.tags.push(newTag);
+          await this.updateNodeTags(node);
+          this.renderTags(node, tagContainer);
+          tagInput.value = '';
+        }
+      }
+    });
+  }
+
+  renderTags(node, container) {
+    container.innerHTML = '';
+    node.tags.forEach(tag => {
+      const tagElement = document.createElement('span');
+      tagElement.classList.add('tag');
+      tagElement.textContent = tag;
+      const removeButton = document.createElement('span');
+      removeButton.classList.add('tag-remove');
+      removeButton.textContent = '×';
+      removeButton.onclick = async () => {
+        node.tags = node.tags.filter(t => t !== tag);
+        await this.updateNodeTags(node);
+        this.renderTags(node, container);
+      };
+      tagElement.appendChild(removeButton);
+      container.appendChild(tagElement);
+    });
+  }
+
+  async updateNodeTags(node) {
+    try {
+      await this.dataManager.updateBookmark(node.id, { tags: node.tags });
+      this.loadBookmarksData();  // Reload and redraw the graph
+    } catch (error) {
+      console.error("Error updating bookmark tags:", error);
     }
   }
 
