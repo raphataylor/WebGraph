@@ -97,10 +97,10 @@ class GraphVisualization {
       this.highlightNodes(searchTerm);
     });
 
-    searchBar.addEventListener('blur', () => {
+    /* searchBar.addEventListener('blur', () => {
       searchBar.value = ''; // Clear the search bar
       this.highlightNodes(''); // Clear all highlighting
-    });
+    }); */
 
     d3.select("#go-to-link").on("click", () => this.goToLink());
     d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
