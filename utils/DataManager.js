@@ -191,6 +191,16 @@ class DataManager {
       const bookmarkIndex = space.sites.findIndex(site => site.id === bookmarkId);
       if (bookmarkIndex !== -1) {
         space.sites[bookmarkIndex] = { ...space.sites[bookmarkIndex], ...updatedData };
+        
+        // Update tags
+        if (updatedData.tags) {
+          updatedData.tags.forEach(tagName => {
+            if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+              space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
+            }
+          });
+        }
+        
         await this.saveData();
         return space.sites[bookmarkIndex];
       }

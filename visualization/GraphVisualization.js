@@ -466,9 +466,9 @@ class GraphVisualization {
   setupTagEditor(node) {
     const tagContainer = document.getElementById('tag-container');
     const tagInput = document.getElementById('tag-input');
-
+  
     this.renderTags(node, tagContainer);
-
+  
     tagInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -478,6 +478,9 @@ class GraphVisualization {
           await this.updateNodeTags(node);
           this.renderTags(node, tagContainer);
           tagInput.value = '';
+          
+          // Update the graph
+          await this.loadBookmarksData();
         }
       }
     });
@@ -505,7 +508,8 @@ class GraphVisualization {
   async updateNodeTags(node) {
     try {
       await this.dataManager.updateBookmark(node.id, { tags: node.tags });
-      this.loadBookmarksData();  // Reload and redraw the graph
+      await this.loadBookmarksData();  // Reload and redraw the graph
+      this.updateVisualization(); 
     } catch (error) {
       console.error("Error updating bookmark tags:", error);
     }
