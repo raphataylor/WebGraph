@@ -289,11 +289,17 @@ class GraphVisualization {
   }
 
   createGroups(tags, sites) {
+    if (!tags || !sites) {
+        console.error("Tags or sites are undefined");
+        return [];
+    }
+    
     return tags.map(tag => ({
-      id: tag.id,
-      nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
+        id: tag.id,
+        nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
     }));
-  }
+}
+
 
   drawGroups(groups) {
     const groupSelection = this.container.selectAll('.group')
@@ -311,11 +317,15 @@ class GraphVisualization {
         .style("opacity", 0.3);
 }
 
-groupPath(d) {
-    if (!d || !d.nodes || d.nodes.length < 2) return "";
+  groupPath(d) {
+    if (!d || !d.nodes || d.nodes.length < 2) {
+        return "";  // Safely return an empty string if nodes are not iterable
+    }
+    
     const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
     return hull ? `M${hull.join("L")}Z` : "";
-}
+  }
+
 
 
   drawLinks(links) {
@@ -408,7 +418,9 @@ groupPath(d) {
     d.fy = null;
   }
 
-  updateVisualization(groups) {
+  updateVisualization(groups = []) {
+    console.log('Groups:', groups);  // Debugging: Check the integrity of groups
+
     if (!this.simulation) {
         console.error("Simulation not initialized");
         return;
@@ -417,7 +429,7 @@ groupPath(d) {
     // Draw groups
     this.drawGroups(groups);
 
-    // Update links
+    // Draw links first to ensure they are below nodes
     const linkSelection = this.container.selectAll(".link")
         .data(this.links, d => `${d.source.id}-${d.target.id}`);
 
@@ -429,7 +441,7 @@ groupPath(d) {
         .merge(linkSelection)
         .attr("stroke-width", this.linkSize);
 
-    // Update nodes
+    // Then draw nodes to ensure they are above links
     const nodeSelection = this.container.selectAll(".node")
         .data(this.nodes, d => d.id);
 
@@ -482,6 +494,7 @@ groupPath(d) {
     this.simulation.force("link").links(this.links);
     this.simulation.alpha(1).restart();
 }
+
 
 
   updateSimulation() {
