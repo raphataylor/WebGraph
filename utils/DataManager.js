@@ -220,14 +220,14 @@ class DataManager {
       throw new Error('Tag not found');
     }
 
-    // Modified: Clear all bookmarks and tags
+    // Clear all bookmarks and tags
     async clearAll() {
       this.data = { spaces: [{ id: "space1", name: "Personal Bookmarks", tags: [], sites: [] }] };
       await this.saveData();
       await this.clearAllSnapshots();
     }
   
-    // New method: Clear all snapshots from IndexedDB
+    // Clear all snapshots from IndexedDB
     async clearAllSnapshots() {
       return new Promise((resolve, reject) => {
         const transaction = this.db.transaction(['snapshots'], 'readwrite');

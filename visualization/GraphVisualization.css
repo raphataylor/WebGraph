@@ -301,3 +301,18 @@ body, html {
   .control-group label {
     cursor: help;
   }
+
+  .reset-button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.reset-button:hover {
+    background-color: #3b78e7;
+}

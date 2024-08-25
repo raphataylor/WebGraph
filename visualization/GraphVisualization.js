@@ -10,16 +10,28 @@ class GraphVisualization {
     this.svg = null;
     this.container = null;
     this.simulation = null;
-    this.nodeSize = 10;
-    this.linkSize = 2;
-    this.charge = -200;
-    this.linkDistance = 50;
-    this.collisionStrength = 0.5;
-    this.gravityStrength = 0.1;
-    this.alpha = 1;
-    this.alphaDecay = 0.0228;
-    this.alphaMin = 0.001;
-    this.velocityDecay = 0.4;
+    this.defaultSettings = {
+      nodeSize: 10,
+      linkSize: 2,
+      charge: -200,
+      linkDistance: 50,
+      collisionStrength: 0.5,
+      gravityStrength: 0.1,
+      alpha: 1,
+      alphaDecay: 0.0228,
+      alphaMin: 0.001,
+      velocityDecay: 0.4
+    };
+    this.nodeSize = this.defaultSettings.nodeSize;
+    this.linkSize = this.defaultSettings.linkSize;
+    this.charge = this.defaultSettings.charge;
+    this.linkDistance = this.defaultSettings.linkDistance;
+    this.collisionStrength = this.defaultSettings.collisionStrength;
+    this.gravityStrength = this.defaultSettings.gravityStrength;
+    this.alpha = this.defaultSettings.alpha;
+    this.alphaDecay = this.defaultSettings.alphaDecay;
+    this.alphaMin = this.defaultSettings.alphaMin;
+    this.velocityDecay = this.defaultSettings.velocityDecay;
     this.nodes = [];
     this.links = [];
     this.tagMap = new Map();
@@ -30,67 +42,78 @@ class GraphVisualization {
     this.checkAndShowWelcomeScreen();
   }
 
-  initializeGraph() {
+  async initializeGraph() {
+    await this.loadForceSettings();  
     this.svg = d3.select(this.element).append("svg")
-      .attr("width", this.width)
-      .attr("height", this.height)
-      .call(d3.zoom().on("zoom", (event) => {
-        this.container.attr("transform", event.transform);
-      }));
-  
+        .attr("width", this.width)
+        .attr("height", this.height)
+        .call(d3.zoom().on("zoom", (event) => {
+            this.container.attr("transform", event.transform);
+        }));
+
     this.container = this.svg.append("g");
     this.createVisualization();
     this.loadBookmarksData();
-  }
+}
 
   setupEventListeners() {
     d3.select("#node-size").on("input", () => {
       this.nodeSize = +d3.select("#node-size").property("value");
+      this.saveForceSettings();
       this.updateVisualization();
     });
 
     d3.select("#link-size").on("input", () => {
       this.linkSize = +d3.select("#link-size").property("value");
+      this.saveForceSettings();
       this.updateVisualization();
     });
 
     d3.select("#charge").on("input", () => {
       this.charge = +d3.select("#charge").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#link-distance").on("input", () => {
       this.linkDistance = +d3.select("#link-distance").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#collision-strength").on("input", () => {
       this.collisionStrength = +d3.select("#collision-strength").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#gravity-strength").on("input", () => {
       this.gravityStrength = +d3.select("#gravity-strength").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#alpha").on("input", () => {
       this.alpha = +d3.select("#alpha").property("value");
+      this.saveForceSettings();
       this.simulation.alpha(this.alpha);
     });
 
     d3.select("#alpha-decay").on("input", () => {
       this.alphaDecay = +d3.select("#alpha-decay").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#alpha-min").on("input", () => {
       this.alphaMin = +d3.select("#alpha-min").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
     d3.select("#velocity-decay").on("input", () => {
       this.velocityDecay = +d3.select("#velocity-decay").property("value");
+      this.saveForceSettings();
       this.updateSimulation();
     });
 
@@ -108,7 +131,93 @@ class GraphVisualization {
     d3.select("#go-to-link").on("click", () => this.goToLink());
     d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
     d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
+    d3.select("#reset-defaults").on("click", () => this.resetToDefaults());
   }
+
+  async loadForceSettings() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get('forceSettings', (result) => {
+            if (result.forceSettings) {
+                const settings = result.forceSettings;
+                this.nodeSize = settings.nodeSize;
+                this.linkSize = settings.linkSize;
+                this.charge = settings.charge;
+                this.linkDistance = settings.linkDistance;
+                this.collisionStrength = settings.collisionStrength;
+                this.gravityStrength = settings.gravityStrength;
+                this.alpha = settings.alpha;
+                this.alphaDecay = settings.alphaDecay;
+                this.alphaMin = settings.alphaMin;
+                this.velocityDecay = settings.velocityDecay;
+
+                // Update the controls with the loaded values
+                d3.select("#node-size").property("value", this.nodeSize);
+                d3.select("#link-size").property("value", this.linkSize);
+                d3.select("#charge").property("value", this.charge);
+                d3.select("#link-distance").property("value", this.linkDistance);
+                d3.select("#collision-strength").property("value", this.collisionStrength);
+                d3.select("#gravity-strength").property("value", this.gravityStrength);
+                d3.select("#alpha").property("value", this.alpha);
+                d3.select("#alpha-decay").property("value", this.alphaDecay);
+                d3.select("#alpha-min").property("value", this.alphaMin);
+                d3.select("#velocity-decay").property("value", this.velocityDecay);
+
+                console.log("Force settings loaded:", settings);
+            }
+            resolve();
+        });
+    });
+}
+
+  saveForceSettings() {
+    const settings = {
+        nodeSize: this.nodeSize,
+        linkSize: this.linkSize,
+        charge: this.charge,
+        linkDistance: this.linkDistance,
+        collisionStrength: this.collisionStrength,
+        gravityStrength: this.gravityStrength,
+        alpha: this.alpha,
+        alphaDecay: this.alphaDecay,
+        alphaMin: this.alphaMin,
+        velocityDecay: this.velocityDecay
+    };
+
+    chrome.storage.local.set({ forceSettings: settings }, () => {
+        console.log("Force settings saved:", settings);
+    });
+  }
+
+  resetToDefaults() {
+    // Reset to default settings
+    this.nodeSize = this.defaultSettings.nodeSize;
+    this.linkSize = this.defaultSettings.linkSize;
+    this.charge = this.defaultSettings.charge;
+    this.linkDistance = this.defaultSettings.linkDistance;
+    this.collisionStrength = this.defaultSettings.collisionStrength;
+    this.gravityStrength = this.defaultSettings.gravityStrength;
+    this.alpha = this.defaultSettings.alpha;
+    this.alphaDecay = this.defaultSettings.alphaDecay;
+    this.alphaMin = this.defaultSettings.alphaMin;
+    this.velocityDecay = this.defaultSettings.velocityDecay;
+
+    // Update UI controls to reflect default values
+    d3.select("#node-size").property("value", this.nodeSize);
+    d3.select("#link-size").property("value", this.linkSize);
+    d3.select("#charge").property("value", this.charge);
+    d3.select("#link-distance").property("value", this.linkDistance);
+    d3.select("#collision-strength").property("value", this.collisionStrength);
+    d3.select("#gravity-strength").property("value", this.gravityStrength);
+    d3.select("#alpha").property("value", this.alpha);
+    d3.select("#alpha-decay").property("value", this.alphaDecay);
+    d3.select("#alpha-min").property("value", this.alphaMin);
+    d3.select("#velocity-decay").property("value", this.velocityDecay);
+
+    // Save default settings and update the simulation
+    this.saveForceSettings();
+    this.updateSimulation();
+    console.log("Reset to default settings.");
+}
 
   async loadBookmarksData() {
     try {
@@ -130,17 +239,6 @@ class GraphVisualization {
       this.updateVisualization(groups);
     } catch (error) {
       console.error("Error loading data:", error);
-    }
-  }
-
-  async removeSelectedBookmark() {
-    if (this.selectedNode && this.selectedNode.tags) {  // Check if it's a bookmark node
-      try {
-        await this.dataManager.removeBookmark(this.selectedNode.id);
-        this.loadBookmarksData();  // Reload and redraw the graph
-      } catch (error) {
-        console.error("Error removing bookmark:", error);
-      }
     }
   }
 
@@ -177,7 +275,7 @@ class GraphVisualization {
       if (site.tags) {
         site.tags.forEach(tagName => {
           // debugging console log
-          console.log(`Processing site: ${site.title}, tags: ${site.tags}`);
+          /* console.log(`Processing site: ${site.title}, tags: ${site.tags}`); */
           const lowercaseTagName = tagName.toLowerCase();
           if (this.tagMap.has(lowercaseTagName)) {
             links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
@@ -198,14 +296,27 @@ class GraphVisualization {
   }
 
   drawGroups(groups) {
-    this.container.selectAll('.group')
-      .data(groups)
-      .enter().append('path')
-      .attr('class', 'group')
-      .style("fill", (d, i) => this.color(i))
-      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
-      .style("opacity", 0.3);
-  }
+    const groupSelection = this.container.selectAll('.group')
+        .data(groups);
+
+    groupSelection.exit().remove();
+
+    groupSelection.enter()
+        .append('path')
+        .attr('class', 'group')
+        .merge(groupSelection)
+        .attr('d', this.groupPath.bind(this))
+        .style("fill", (d, i) => this.color(i))
+        .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
+        .style("opacity", 0.3);
+}
+
+groupPath(d) {
+    if (!d || !d.nodes || d.nodes.length < 2) return "";
+    const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
+    return hull ? `M${hull.join("L")}Z` : "";
+}
+
 
   drawLinks(links) {
     console.log(`Drawing ${links.length} links`);
@@ -299,91 +410,79 @@ class GraphVisualization {
 
   updateVisualization(groups) {
     if (!this.simulation) {
-      console.error("Simulation not initialized");
-      return;
+        console.error("Simulation not initialized");
+        return;
     }
-  
-    // Update groups
-    const groupSelection = this.container.selectAll('.group')
-      .data(groups || [], d => d.id);
-  
-    groupSelection.exit().remove();
-  
-    const groupEnter = groupSelection.enter()
-      .append('path')
-      .attr('class', 'group');
-  
-    groupEnter.merge(groupSelection)
-      .style("fill", (d, i) => this.color(i))
-      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
-      .style("opacity", 0.3)
-      .attr("d", this.groupPath.bind(this));
-  
+
+    // Draw groups
+    this.drawGroups(groups);
+
     // Update links
     const linkSelection = this.container.selectAll(".link")
-      .data(this.links, d => `${d.source.id}-${d.target.id}`);
-  
+        .data(this.links, d => `${d.source.id}-${d.target.id}`);
+
     linkSelection.exit().remove();
-  
+
     linkSelection.enter()
-      .append("line")
-      .attr("class", "link")
-      .merge(linkSelection)
-      .attr("stroke-width", this.linkSize);
-  
+        .append("line")
+        .attr("class", "link")
+        .merge(linkSelection)
+        .attr("stroke-width", this.linkSize);
+
     // Update nodes
     const nodeSelection = this.container.selectAll(".node")
-      .data(this.nodes, d => d.id);
-  
+        .data(this.nodes, d => d.id);
+
     nodeSelection.exit().remove();
-  
+
     const nodeEnter = nodeSelection.enter()
-      .append("g")
-      .attr("class", d => "node " + (d.tags ? "site" : "tag"))
-      .call(d3.drag()
-        .on("start", (event, d) => this.dragstarted(event, d))
-        .on("drag", (event, d) => this.dragged(event, d))
-        .on("end", (event, d) => this.dragended(event, d)))
-      .on("click", (event, d) => this.nodeClicked(d));
-  
+        .append("g")
+        .attr("class", d => "node " + (d.tags ? "site" : "tag"))
+        .call(d3.drag()
+            .on("start", (event, d) => this.dragstarted(event, d))
+            .on("drag", (event, d) => this.dragged(event, d))
+            .on("end", (event, d) => this.dragended(event, d)))
+        .on("click", (event, d) => this.nodeClicked(d));
+
     nodeEnter.append("circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-  
+        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+
     nodeEnter.append("text")
-      .attr("dy", ".35em")
-      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-      .text(d => d.name || d.title);
-  
+        .attr("dy", ".35em")
+        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+        .text(d => d.name || d.title);
+
     nodeEnter.filter(d => d.tags && d.favicon)
-      .append("image")
-      .attr("xlink:href", d => d.favicon)
-      .attr("x", -this.nodeSize * 0.8)
-      .attr("y", -this.nodeSize * 0.8)
-      .attr("width", this.nodeSize * 1.6)
-      .attr("height", this.nodeSize * 1.6);
-  
+        .append("image")
+        .attr("xlink:href", d => d.favicon)
+        .attr("x", -this.nodeSize * 0.8)
+        .attr("y", -this.nodeSize * 0.8)
+        .attr("width", this.nodeSize * 1.6)
+        .attr("height", this.nodeSize * 1.6);
+
     nodeEnter.append("title")
-      .text(d => {
-        if (d.tags) {
-          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
-        } else {
-          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
-        }
-      });
-  
+        .text(d => {
+            if (d.tags) {
+                return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
+            } else {
+                return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
+            }
+        });
+
     const nodeUpdate = nodeEnter.merge(nodeSelection);
-  
+
     nodeUpdate.select("circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-  
+        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+
     nodeUpdate.select("text")
-      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-      .text(d => d.name || d.title);
-  
+        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+        .text(d => d.name || d.title);
+
     this.simulation.nodes(this.nodes);
     this.simulation.force("link").links(this.links);
     this.simulation.alpha(1).restart();
-  }
+}
+
 
   updateSimulation() {
     this.simulation
@@ -507,13 +606,22 @@ class GraphVisualization {
 
   async updateNodeTags(node) {
     try {
-      await this.dataManager.updateBookmark(node.id, { tags: node.tags });
-      await this.loadBookmarksData();  // Reload and redraw the graph
-      this.updateVisualization(); 
+        await this.dataManager.updateBookmark(node.id, { tags: node.tags });
+        const data = await this.dataManager.loadData();
+        const tags = data.spaces[0].tags || [];
+        const sites = data.spaces[0].sites || [];
+        
+        this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
+        this.nodes = [...tags, ...sites];
+        this.links = this.createLinks(sites);
+        const groups = this.createGroups(tags, sites);
+
+        this.updateVisualization(groups);  // Pass the groups to the visualization update
     } catch (error) {
-      console.error("Error updating bookmark tags:", error);
+        console.error("Error updating bookmark tags:", error);
     }
-  }
+}
+
 
   setupSnapshotResize() {
     const resizeButton = document.querySelector('.snapshot-resize');
