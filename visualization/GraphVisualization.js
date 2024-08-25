@@ -61,12 +61,14 @@ class GraphVisualization {
       this.nodeSize = +d3.select("#node-size").property("value");
       this.saveForceSettings();
       this.updateVisualization();
+      this.redrawGroups();
     });
 
     d3.select("#link-size").on("input", () => {
       this.linkSize = +d3.select("#link-size").property("value");
       this.saveForceSettings();
       this.updateVisualization();
+      this.redrawGroups();
     });
 
     d3.select("#charge").on("input", () => {
@@ -303,19 +305,19 @@ class GraphVisualization {
 
   drawGroups(groups) {
     const groupSelection = this.container.selectAll('.group')
-        .data(groups);
+      .data(groups);
 
     groupSelection.exit().remove();
 
     groupSelection.enter()
-        .append('path')
-        .attr('class', 'group')
-        .merge(groupSelection)
-        .attr('d', this.groupPath.bind(this))
-        .style("fill", (d, i) => this.color(i))
-        .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
-        .style("opacity", 0.3);
-}
+      .insert('path', ':first-child') // Insert at the beginning to ensure it's behind other elements
+      .attr('class', 'group')
+      .merge(groupSelection)
+      .attr('d', this.groupPath.bind(this))
+      .style("fill", (d, i) => this.color(i))
+      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
+      .style("opacity", 0.3);
+  }
 
   groupPath(d) {
     if (!d || !d.nodes || d.nodes.length < 2) {
@@ -419,83 +421,107 @@ class GraphVisualization {
   }
 
   updateVisualization(groups = []) {
-    console.log('Groups:', groups);  // Debugging: Check the integrity of groups
-
     if (!this.simulation) {
-        console.error("Simulation not initialized");
-        return;
+      console.error("Simulation not initialized");
+      return;
     }
 
-    // Draw groups
+    // Ensure groups are calculated if not provided
+    if (groups.length === 0) {
+      const tags = this.nodes.filter(node => !node.tags);
+      const sites = this.nodes.filter(node => node.tags);
+      groups = this.createGroups(tags, sites);
+    }
+
+    // Draw groups first (background layer)
     this.drawGroups(groups);
 
-    // Draw links first to ensure they are below nodes
+    // Then draw links
     const linkSelection = this.container.selectAll(".link")
-        .data(this.links, d => `${d.source.id}-${d.target.id}`);
-
+      .data(this.links, d => `${d.source.id}-${d.target.id}`);
+    
     linkSelection.exit().remove();
-
+    
     linkSelection.enter()
-        .append("line")
-        .attr("class", "link")
-        .merge(linkSelection)
-        .attr("stroke-width", this.linkSize);
+      .append("line")
+      .attr("class", "link")
+      .merge(linkSelection)
+      .attr("stroke-width", this.linkSize);
 
-    // Then draw nodes to ensure they are above links
+    // Finally, draw nodes (top layer)
     const nodeSelection = this.container.selectAll(".node")
-        .data(this.nodes, d => d.id);
-
+      .data(this.nodes, d => d.id);
+    
     nodeSelection.exit().remove();
-
+    
     const nodeEnter = nodeSelection.enter()
-        .append("g")
-        .attr("class", d => "node " + (d.tags ? "site" : "tag"))
-        .call(d3.drag()
-            .on("start", (event, d) => this.dragstarted(event, d))
-            .on("drag", (event, d) => this.dragged(event, d))
-            .on("end", (event, d) => this.dragended(event, d)))
-        .on("click", (event, d) => this.nodeClicked(d));
+      .append("g")
+      .attr("class", d => "node " + (d.tags ? "site" : "tag"))
+      .call(d3.drag()
+        .on("start", (event, d) => this.dragstarted(event, d))
+        .on("drag", (event, d) => this.dragged(event, d))
+        .on("end", (event, d) => this.dragended(event, d)))
+      .on("click", (event, d) => this.nodeClicked(d));
 
     nodeEnter.append("circle")
-        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
 
     nodeEnter.append("text")
-        .attr("dy", ".35em")
-        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-        .text(d => d.name || d.title);
+      .attr("dy", ".35em")
+      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+      .text(d => d.name || d.title);
 
     nodeEnter.filter(d => d.tags && d.favicon)
-        .append("image")
-        .attr("xlink:href", d => d.favicon)
-        .attr("x", -this.nodeSize * 0.8)
-        .attr("y", -this.nodeSize * 0.8)
-        .attr("width", this.nodeSize * 1.6)
-        .attr("height", this.nodeSize * 1.6);
+      .append("image")
+      .attr("xlink:href", d => d.favicon)
+      .attr("x", -this.nodeSize * 0.8)
+      .attr("y", -this.nodeSize * 0.8)
+      .attr("width", this.nodeSize * 1.6)
+      .attr("height", this.nodeSize * 1.6);
 
     nodeEnter.append("title")
-        .text(d => {
-            if (d.tags) {
-                return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
-            } else {
-                return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
-            }
-        });
+      .text(d => {
+        if (d.tags) {
+          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
+        } else {
+          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
+        }
+      });
 
     const nodeUpdate = nodeEnter.merge(nodeSelection);
-
     nodeUpdate.select("circle")
-        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-
+      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
     nodeUpdate.select("text")
-        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-        .text(d => d.name || d.title);
+      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+      .text(d => d.name || d.title);
 
     this.simulation.nodes(this.nodes);
     this.simulation.force("link").links(this.links);
     this.simulation.alpha(1).restart();
-}
+  }
 
+  redrawGroups(groups = []) {
+    // If groups are not provided, recalculate them
+    if (groups.length === 0) {
+      const tags = this.nodes.filter(node => !node.tags);
+      const sites = this.nodes.filter(node => node.tags);
+      groups = this.createGroups(tags, sites);
+    }
 
+    const groupSelection = this.container.selectAll('.group')
+      .data(groups);
+
+    groupSelection.exit().remove();
+
+    groupSelection.enter()
+      .append('path')
+      .attr('class', 'group')
+      .merge(groupSelection)
+      .attr('d', this.groupPath.bind(this))
+      .style("fill", (d, i) => this.color(i))
+      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
+      .style("opacity", 0.3);
+  }
 
   updateSimulation() {
     this.simulation
