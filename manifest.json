@@ -5,13 +5,7 @@
     "description": "A Chrome extension for visualising bookmarks and tags as a network graph",
     "permissions": [
       "storage",
-      "tabs",
-      "contextMenus",
-      "activeTab",
-      "scripting"
-    ],
-    "host_permissions": [
-    "<all_urls>"
+      "activeTab"
     ],
     "background": {
       "service_worker": "background.js",
