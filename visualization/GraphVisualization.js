@@ -248,18 +248,22 @@ async loadBookmarksData() {
 }
 
 
-  async clearAllBookmarks() {
-    if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
-      try {
-        await this.dataManager.clearAll();
-        this.nodes = [];
-        this.links = [];
-        this.updateVisualization();
-      } catch (error) {
-        console.error("Error clearing bookmarks:", error);
-      }
+async clearAllBookmarks() {
+  if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
+    try {
+      await this.dataManager.clearAll();
+      this.nodes = [];
+      this.links = [];
+      this.updateVisualization();
+      // Clear the sidebar
+      this.updateSidebar({});
+      // Clear the action buttons
+      this.updateActionButtons({});
+    } catch (error) {
+      console.error("Error clearing bookmarks:", error);
     }
   }
+}
 
   createVisualization() {
     this.simulation = d3.forceSimulation()
@@ -428,20 +432,24 @@ createGroups(tags, sites) {
 
   updateVisualization(groups = []) {
     if (!this.simulation) {
-        console.error("Simulation not initialized");
-        return;
+      console.error("Simulation not initialized");
+      return;
+    }
+
+    // Handle the case when there are no nodes
+    if (this.nodes.length === 0) {
+      this.container.selectAll(".group").remove();
+      this.container.selectAll(".link").remove();
+      this.container.selectAll(".node").remove();
+      console.log("All data cleared, visualization reset");
+      return;
     }
 
     // Ensure groups are calculated if not provided
     if (groups.length === 0) {
-        const tags = this.nodes.filter(node => !node.tags);
-        const sites = this.nodes.filter(node => node.tags);
-        groups = this.createGroups(tags, sites);
-    }
-
-    if (!groups || groups.length === 0) {
-        console.warn("No valid groups to visualize");
-        return;
+      const tags = this.nodes.filter(node => !node.tags);
+      const sites = this.nodes.filter(node => node.tags);
+      groups = this.createGroups(tags, sites);
     }
 
     // Draw groups first (background layer)
@@ -449,19 +457,19 @@ createGroups(tags, sites) {
 
     // Then draw links
     const linkSelection = this.container.selectAll(".link")
-        .data(this.links, d => `${d.source.id}-${d.target.id}`);
+      .data(this.links, d => `${d.source.id}-${d.target.id}`);
     
     linkSelection.exit().remove();
     
     linkSelection.enter()
-        .append("line")
-        .attr("class", "link")
-        .merge(linkSelection)
-        .attr("stroke-width", this.linkSize);
+      .append("line")
+      .attr("class", "link")
+      .merge(linkSelection)
+      .attr("stroke-width", this.linkSize);
 
     // Finally, draw nodes (top layer)
     const nodeSelection = this.container.selectAll(".node")
-        .data(this.nodes, d => d.id);
+      .data(this.nodes, d => d.id);
     
     nodeSelection.exit().remove();
     
