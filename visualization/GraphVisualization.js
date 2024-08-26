@@ -4,7 +4,7 @@ class GraphVisualization {
   constructor(element) {
     this.element = element;
     this.dataManager = new DataManager();
-    this.renderer = new GraphRenderer(element);
+    this.renderer = new GraphRenderer(element, this);
     this.interactionHandler = new InteractionHandler(this);
     this.settingsManager = new SettingsManager();
     this.sidebarManager = new SidebarManager(this);
@@ -53,6 +53,12 @@ class GraphVisualization {
     } catch (error) {
       console.error("Error loading data:", error);
     }
+  }
+
+  handleNodeClick(node) {
+    this.selectedNode = node;
+    this.sidebarManager.updateSidebar(node);
+    this.sidebarManager.updateActionButtons(node);
   }
 
   async updateNodeTags(node) {
@@ -104,13 +110,29 @@ class GraphVisualization {
 }
 
 class GraphRenderer {
-  constructor(element) {
-    this.container = d3.select(element).append("svg");
-    this.simulation = null;
+  constructor(element, graphVisualization) {
+    this.graphVisualization = graphVisualization;
+    this.svg = d3.select(element).append("svg");
+    this.container = this.svg.append("g");
+    this.width = window.innerWidth - 500;
+    this.height = window.innerHeight;
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.simulation = null;
     this.nodeElements = null;
     this.linkElements = null;
     this.groupElements = null;
+
+    this.setupZoom();
+  }
+
+  setupZoom() {
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 10])
+      .on("zoom", (event) => {
+        this.container.attr("transform", event.transform);
+      });
+
+    this.svg.call(zoom);
   }
 
   createVisualization(width, height, settings) {
@@ -118,12 +140,9 @@ class GraphRenderer {
     this.height = height;
     this.settings = settings;
     
-    this.container
+    this.svg
       .attr("width", this.width)
-      .attr("height", this.height)
-      .call(d3.zoom().on("zoom", (event) => {
-        this.container.attr("transform", event.transform);
-      }));
+      .attr("height", this.height);
 
       this.simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
@@ -139,17 +158,24 @@ class GraphRenderer {
   }
 
   ticked() {
-    this.linkElements
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
+    // Check if elements exist before updating
+    if (this.linkElements) {
+      this.linkElements
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+    }
 
-    this.nodeElements
-      .attr("transform", d => `translate(${d.x},${d.y})`);
+    if (this.nodeElements) {
+      this.nodeElements
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+    }
 
-    this.groupElements
-      .attr("d", this.groupPath.bind(this));
+    if (this.groupElements) {
+      this.groupElements
+        .attr("d", this.groupPath.bind(this));
+    }
   }
 
   updateSimulation() {
@@ -169,9 +195,10 @@ class GraphRenderer {
     this.simulation.nodes(nodes);
     this.simulation.force("link").links(links);
 
+
+    this.drawGroups(groups);
     this.drawLinks(links);
     this.drawNodes(nodes);
-    this.drawGroups(groups);
 
     this.simulation.alpha(1).restart();
   }
@@ -198,7 +225,8 @@ class GraphRenderer {
             .call(d3.drag()
               .on("start", (event, d) => this.dragstarted(event, d))
               .on("drag", (event, d) => this.dragged(event, d))
-              .on("end", (event, d) => this.dragended(event, d)));
+              .on("end", (event, d) => this.dragended(event, d)))
+              .on("click", (event, d) => this.graphVisualization.handleNodeClick(d));
 
           nodeEnter.append("circle")
             .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
@@ -208,11 +236,11 @@ class GraphRenderer {
             .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
             .text(d => d.name || d.title);
 
-          return nodeEnter;
-        },
-        update => update,
-        exit => exit.remove()
-      );
+            return nodeEnter;
+          },
+          update => update,
+          exit => exit.remove()
+        );
 
     this.nodeElements.select("circle")
       .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
@@ -226,7 +254,7 @@ class GraphRenderer {
     this.groupElements = this.container.selectAll('.group')
       .data(groups)
       .join(
-        enter => enter.append('path')
+        enter => enter.insert('path', ':first-child') 
           .attr('class', 'group')
           .style("fill", (d, i) => this.color(i))
           .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
@@ -351,9 +379,8 @@ class InteractionHandler {
         this.graphVisualization.nodes = [];
         this.graphVisualization.links = [];
         this.graphVisualization.renderer.updateVisualization([], [], []);
-        // Clear the sidebar and action buttons (these methods need to be implemented)
-        // this.graphVisualization.updateSidebar({});
-        // this.graphVisualization.updateActionButtons({});
+        this.graphVisualization.sidebarManager.updateSidebar({});
+        this.graphVisualization.sidebarManager.updateActionButtons({});
       } catch (error) {
         console.error("Error clearing bookmarks:", error);
       }
@@ -629,4 +656,4 @@ const DataUtils = {
   }
 };
 
-export default GraphVisualization;
+const graph = new GraphVisualization("#graph");
