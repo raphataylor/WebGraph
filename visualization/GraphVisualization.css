@@ -140,6 +140,7 @@ body, html {
 
 .node.site circle {
     fill: #86adeb;
+    fill-opacity: 0.3;
 }
 
 .node.tag circle {
