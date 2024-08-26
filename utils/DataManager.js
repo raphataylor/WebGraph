@@ -51,7 +51,7 @@ class DataManager {
             } else {
               this.data = result.webgraph_data;
             }
-            console.log('Loaded data:', JSON.stringify(this.data, null, 2));
+            console.log('DataManger.js Loaded data:', JSON.stringify(this.data, null, 2));
             resolve(this.data);
           }
         });
