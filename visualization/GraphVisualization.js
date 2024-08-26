@@ -31,6 +31,15 @@ class GraphVisualization {
 
   setupEventListeners() {
     this.interactionHandler.setup();
+    d3.select("#reset-defaults").on("click", () => this.resetToDefaults());
+  }
+
+  resetToDefaults() {
+    this.settingsManager.resetToDefaults();
+
+    this.renderer.updateSettingsAndRedraw(this.settingsManager.settings);
+
+    console.log("Reset to default settings.");
   }
 
   async loadBookmarksData() {
@@ -78,6 +87,20 @@ class GraphVisualization {
         chrome.storage.local.set({ showWelcomeScreen: false });
       }
     });
+  }
+
+  async removeNodeFromVisualization(node) {
+    this.nodes = this.nodes.filter(n => n.id !== node.id);
+    this.links = this.links.filter(link => link.source.id !== node.id && link.target.id !== node.id);
+
+    const tags = this.nodes.filter(n => !n.tags);
+    const sites = this.nodes.filter(n => n.tags);
+    const groups = DataUtils.createGroups(tags, sites);
+
+    this.selectedNode = null;
+    this.renderer.updateVisualization(this.nodes, this.links, groups);
+    this.sidebarManager.updateSidebar({});
+    this.sidebarManager.updateActionButtons({});
   }
 
   displayWelcomeScreen() {
@@ -178,17 +201,17 @@ class GraphRenderer {
     }
   }
 
-  updateSimulation() {
+  updateSimulation(settings) {
+    this.settings = settings;
     this.simulation
-      .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.settings.linkDistance))
-      .force("charge", d3.forceManyBody().strength(this.settings.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(this.settings.gravityStrength))
-      .force("collision", d3.forceCollide().radius(this.settings.nodeSize * 3).strength(this.settings.collisionStrength))
-      .alpha(this.settings.alpha)
-      .alphaDecay(this.settings.alphaDecay)
-      .alphaMin(this.settings.alphaMin)
-      .velocityDecay(this.settings.velocityDecay)
-      .restart();
+      .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
+      .force("charge", d3.forceManyBody().strength(settings.charge))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(settings.gravityStrength))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 3).strength(settings.collisionStrength))
+      .alpha(settings.alpha)
+      .alphaDecay(settings.alphaDecay)
+      .alphaMin(settings.alphaMin)
+      .velocityDecay(settings.velocityDecay);
   }
 
   updateVisualization(nodes, links, groups) {
@@ -200,6 +223,26 @@ class GraphRenderer {
     this.drawLinks(links);
     this.drawNodes(nodes);
 
+    this.simulation.alpha(1).restart();
+  }
+
+  updateSettingsAndRedraw(settings) {
+    this.settings = settings;
+    this.updateSimulation(settings);
+
+    // Reassign nodes and links to the simulation
+    this.simulation.nodes(this.graphVisualization.nodes);
+    this.simulation.force("link").links(this.graphVisualization.links);
+
+    // Recalculate groups
+    const tags = this.graphVisualization.nodes.filter(n => !n.tags);
+    const sites = this.graphVisualization.nodes.filter(n => n.tags);
+    const groups = DataUtils.createGroups(tags, sites);
+
+    // Update the visualization with the current nodes, links, and recalculated groups
+    this.updateVisualization(this.graphVisualization.nodes, this.graphVisualization.links, groups);
+
+    // Restart the simulation with a high alpha to reorganize the graph
     this.simulation.alpha(1).restart();
   }
 
@@ -226,24 +269,40 @@ class GraphRenderer {
               .on("start", (event, d) => this.dragstarted(event, d))
               .on("drag", (event, d) => this.dragged(event, d))
               .on("end", (event, d) => this.dragended(event, d)))
-              .on("click", (event, d) => this.graphVisualization.handleNodeClick(d));
+            .on("click", (event, d) => this.graphVisualization.handleNodeClick(d));
 
           nodeEnter.append("circle")
             .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
+
+          // Add favicon images for site nodes
+          nodeEnter.filter(d => d.tags && d.favicon)
+            .append("image")
+            .attr("xlink:href", d => d.favicon || "assets/defaultfavicon.png")
+            .attr("x", d => -this.settings.nodeSize * 0.8)
+            .attr("y", d => -this.settings.nodeSize * 0.8)
+            .attr("width", d => this.settings.nodeSize * 1.6)
+            .attr("height", d => this.settings.nodeSize * 1.6);
 
           nodeEnter.append("text")
             .attr("dy", ".35em")
             .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
             .text(d => d.name || d.title);
 
-            return nodeEnter;
-          },
-          update => update,
-          exit => exit.remove()
-        );
+          return nodeEnter;
+        },
+        update => update,
+        exit => exit.remove()
+      );
 
     this.nodeElements.select("circle")
       .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
+
+    // Update favicon positions and sizes
+    this.nodeElements.select("image")
+      .attr("x", d => -this.settings.nodeSize * 0.8)
+      .attr("y", d => -this.settings.nodeSize * 0.8)
+      .attr("width", d => this.settings.nodeSize * 1.6)
+      .attr("height", d => this.settings.nodeSize * 1.6);
 
     this.nodeElements.select("text")
       .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
@@ -325,19 +384,27 @@ class InteractionHandler {
     ];
 
     controls.forEach(control => {
-      d3.select(`#${control.id}`).on("input", () => {
-        const value = +d3.select(`#${control.id}`).property("value");
+      const slider = document.getElementById(control.id);
+      slider.value = this.graphVisualization.settingsManager.settings[control.property];
+      slider.addEventListener("input", () => {
+        const value = +slider.value;
         this.graphVisualization.settingsManager.updateSetting(control.property, value);
-        this.graphVisualization.renderer.updateVisualization(
-          this.graphVisualization.nodes,
-          this.graphVisualization.links,
-          DataUtils.createGroups(
-            this.graphVisualization.nodes.filter(n => !n.tags),
-            this.graphVisualization.nodes.filter(n => n.tags)
-          )
-        );
+        this.handleSettingChange();
       });
     });
+  }
+
+  handleSettingChange() {
+    const settings = this.graphVisualization.settingsManager.settings;
+    this.graphVisualization.renderer.updateSimulation(settings);
+    this.graphVisualization.renderer.updateVisualization(
+      this.graphVisualization.nodes,
+      this.graphVisualization.links,
+      DataUtils.createGroups(
+        this.graphVisualization.nodes.filter(n => !n.tags),
+        this.graphVisualization.nodes.filter(n => n.tags)
+      )
+    );
   }
 
   setupSearchBar() {
@@ -365,7 +432,7 @@ class InteractionHandler {
     if (this.graphVisualization.selectedNode && this.graphVisualization.selectedNode.tags) {
       try {
         await this.graphVisualization.dataManager.removeBookmark(this.graphVisualization.selectedNode.id);
-        await this.graphVisualization.loadBookmarksData(); // Reload and redraw the entire graph
+        await this.graphVisualization.removeNodeFromVisualization(this.graphVisualization.selectedNode);
       } catch (error) {
         console.error("Error removing bookmark:", error);
       }
@@ -389,14 +456,10 @@ class InteractionHandler {
 
   resetToDefaults() {
     this.graphVisualization.settingsManager.resetToDefaults();
-    this.graphVisualization.renderer.updateVisualization(
-      this.graphVisualization.nodes,
-      this.graphVisualization.links,
-      DataUtils.createGroups(
-        this.graphVisualization.nodes.filter(n => !n.tags),
-        this.graphVisualization.nodes.filter(n => n.tags)
-      )
-    );
+    this.graphVisualization.settingsManager.updateSliderPositions();
+    
+    // Update the renderer with new settings and redraw
+    this.graphVisualization.renderer.updateSettingsAndRedraw(this.graphVisualization.settingsManager.settings);
   }
 
   nodeClicked(d) {
@@ -459,6 +522,7 @@ class SettingsManager {
         if (result.forceSettings) {
           this.settings = { ...this.settings, ...result.forceSettings };
         }
+        this.updateSliderPositions();
         resolve();
       });
     });
@@ -468,6 +532,7 @@ class SettingsManager {
     chrome.storage.local.set({ forceSettings: this.settings }, () => {
       console.log("Force settings saved:", this.settings);
     });
+    this.updateSliderPositions();
   }
 
   updateSetting(key, value) {
@@ -478,6 +543,16 @@ class SettingsManager {
   resetToDefaults() {
     this.settings = { ...this.defaultSettings };
     this.saveSettings();
+    this.updateSliderPositions();
+  }
+
+  updateSliderPositions() {
+    Object.entries(this.settings).forEach(([key, value]) => {
+      const slider = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
+      if (slider) {
+        slider.value = value;
+      }
+    });
   }
 }
 
