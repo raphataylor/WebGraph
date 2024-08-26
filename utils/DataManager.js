@@ -85,7 +85,13 @@ class DataManager {
     console.log("Adding bookmark:", bookmark);
     await this.loadData();
     const space = this.data.spaces[0];
-    const newId = 'site' + (space.sites.length + 1);
+    
+    // Generate a unique ID
+    let newId;
+    do {
+      newId = 'site' + Math.floor(Math.random() * 1000000);
+    } while (space.sites.some(site => site.id === newId));
+
     const newBookmark = {
       id: newId,
       title: bookmark.title || 'Untitled',
