@@ -181,7 +181,6 @@ class GraphRenderer {
   }
 
   ticked() {
-    // Check if elements exist before updating
     if (this.linkElements) {
       this.linkElements
         .attr("x1", d => d.source.x)
@@ -286,7 +285,8 @@ class GraphRenderer {
           nodeEnter.append("text")
             .attr("dy", ".35em")
             .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
-            .text(d => d.name || d.title);
+            .text(d => d.name || d.title)
+            .style("font-size", `${this.settings.textSize}px`);
 
           return nodeEnter;
         },
@@ -306,7 +306,8 @@ class GraphRenderer {
 
     this.nodeElements.select("text")
       .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
-      .text(d => d.name || d.title);
+      .text(d => d.name || d.title)
+      .style("font-size", `${this.settings.textSize}px`);
   }
 
   drawGroups(groups) {
@@ -373,6 +374,7 @@ class InteractionHandler {
     const controls = [
       { id: "node-size", property: "nodeSize" },
       { id: "link-size", property: "linkSize" },
+      { id: "text-size", property: "textSize" },
       { id: "charge", property: "charge" },
       { id: "link-distance", property: "linkDistance" },
       { id: "collision-strength", property: "collisionStrength" },
@@ -504,6 +506,7 @@ class SettingsManager {
     this.settings = {
       nodeSize: 10,
       linkSize: 2,
+      textSize: 12, 
       charge: -200,
       linkDistance: 50,
       collisionStrength: 0.5,
