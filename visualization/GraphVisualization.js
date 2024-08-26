@@ -221,28 +221,32 @@ class GraphVisualization {
     console.log("Reset to default settings.");
 }
 
-  async loadBookmarksData() {
-    try {
+async loadBookmarksData() {
+  try {
       const data = await this.dataManager.loadData();
       const space = data.spaces[0];
+      if (!space) throw new Error("No space found in data");
+
       const tags = space.tags || [];
       const sites = space.sites || [];
-      
+
       this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
-      
+
       this.nodes = [...tags, ...sites];
       this.links = this.createLinks(sites);
+
       const groups = this.createGroups(tags, sites);
-  
+
       if (!this.simulation) {
-        this.createVisualization();
+          this.createVisualization();
       }
-  
+
       this.updateVisualization(groups);
-    } catch (error) {
+  } catch (error) {
       console.error("Error loading data:", error);
-    }
   }
+}
+
 
   async clearAllBookmarks() {
     if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
@@ -274,33 +278,34 @@ class GraphVisualization {
   createLinks(sites) {
     const links = [];
     sites.forEach(site => {
-      if (site.tags) {
-        site.tags.forEach(tagName => {
-          // debugging console log
-          /* console.log(`Processing site: ${site.title}, tags: ${site.tags}`); */
-          const lowercaseTagName = tagName.toLowerCase();
-          if (this.tagMap.has(lowercaseTagName)) {
-            links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
-          } else {
-            console.warn(`Tag with name "${tagName}" not found for site ${site.id}`);
-          }
-        });
-      }
+        if (site.tags) {
+            site.tags.forEach(tagName => {
+                const lowercaseTagName = tagName.toLowerCase();
+                if (this.tagMap.has(lowercaseTagName)) {
+                    links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
+                } else {
+                    console.warn(`Tag with name "${tagName}" not found for site ${site.id}`);
+                }
+            });
+        } else {
+            console.warn(`No tags found for site ${site.id}`);
+        }
     });
     return links;
-  }
+}
 
-  createGroups(tags, sites) {
+createGroups(tags, sites) {
     if (!tags || !sites) {
-      console.error("Tags or sites are undefined");
-      return [];
+        console.error("Tags or sites are undefined");
+        return [];
     }
     
     return tags.map(tag => ({
-      id: tag.id,
-      nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
+        id: tag.id,
+        nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
     }));
-  }
+}
+
 
 
   drawGroups(groups) {
@@ -320,13 +325,14 @@ class GraphVisualization {
   }
 
   groupPath(d) {
-    if (!d || !d.nodes || d.nodes.length < 2) {
-        return "";  // Safely return an empty string if nodes are not iterable
+    if (!d || !Array.isArray(d.nodes) || d.nodes.length < 3) {
+        return "";  // Safely return an empty string if nodes are not iterable or insufficient for a hull
     }
     
     const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
     return hull ? `M${hull.join("L")}Z` : "";
-  }
+}
+
 
 
 
@@ -422,15 +428,20 @@ class GraphVisualization {
 
   updateVisualization(groups = []) {
     if (!this.simulation) {
-      console.error("Simulation not initialized");
-      return;
+        console.error("Simulation not initialized");
+        return;
     }
 
     // Ensure groups are calculated if not provided
     if (groups.length === 0) {
-      const tags = this.nodes.filter(node => !node.tags);
-      const sites = this.nodes.filter(node => node.tags);
-      groups = this.createGroups(tags, sites);
+        const tags = this.nodes.filter(node => !node.tags);
+        const sites = this.nodes.filter(node => node.tags);
+        groups = this.createGroups(tags, sites);
+    }
+
+    if (!groups || groups.length === 0) {
+        console.warn("No valid groups to visualize");
+        return;
     }
 
     // Draw groups first (background layer)
@@ -438,67 +449,68 @@ class GraphVisualization {
 
     // Then draw links
     const linkSelection = this.container.selectAll(".link")
-      .data(this.links, d => `${d.source.id}-${d.target.id}`);
+        .data(this.links, d => `${d.source.id}-${d.target.id}`);
     
     linkSelection.exit().remove();
     
     linkSelection.enter()
-      .append("line")
-      .attr("class", "link")
-      .merge(linkSelection)
-      .attr("stroke-width", this.linkSize);
+        .append("line")
+        .attr("class", "link")
+        .merge(linkSelection)
+        .attr("stroke-width", this.linkSize);
 
     // Finally, draw nodes (top layer)
     const nodeSelection = this.container.selectAll(".node")
-      .data(this.nodes, d => d.id);
+        .data(this.nodes, d => d.id);
     
     nodeSelection.exit().remove();
     
     const nodeEnter = nodeSelection.enter()
-      .append("g")
-      .attr("class", d => "node " + (d.tags ? "site" : "tag"))
-      .call(d3.drag()
-        .on("start", (event, d) => this.dragstarted(event, d))
-        .on("drag", (event, d) => this.dragged(event, d))
-        .on("end", (event, d) => this.dragended(event, d)))
-      .on("click", (event, d) => this.nodeClicked(d));
+        .append("g")
+        .attr("class", d => "node " + (d.tags ? "site" : "tag"))
+        .call(d3.drag()
+            .on("start", (event, d) => this.dragstarted(event, d))
+            .on("drag", (event, d) => this.dragged(event, d))
+            .on("end", (event, d) => this.dragended(event, d)))
+        .on("click", (event, d) => this.nodeClicked(d));
 
     nodeEnter.append("circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
 
     nodeEnter.append("text")
-      .attr("dy", ".35em")
-      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-      .text(d => d.name || d.title);
+        .attr("dy", ".35em")
+        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+        .text(d => d.name || d.title);
 
     nodeEnter.filter(d => d.tags && d.favicon)
-      .append("image")
-      .attr("xlink:href", d => d.favicon)
-      .attr("x", -this.nodeSize * 0.8)
-      .attr("y", -this.nodeSize * 0.8)
-      .attr("width", this.nodeSize * 1.6)
-      .attr("height", this.nodeSize * 1.6);
+        .append("image")
+        .attr("xlink:href", d => d.favicon)
+        .attr("x", -this.nodeSize * 0.8)
+        .attr("y", -this.nodeSize * 0.8)
+        .attr("width", this.nodeSize * 1.6)
+        .attr("height", this.nodeSize * 1.6);
 
     nodeEnter.append("title")
-      .text(d => {
-        if (d.tags) {
-          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
-        } else {
-          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
-        }
-      });
+        .text(d => {
+            if (d.tags) {
+                return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
+            } else {
+                return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
+            }
+        });
 
     const nodeUpdate = nodeEnter.merge(nodeSelection);
     nodeUpdate.select("circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
+        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
     nodeUpdate.select("text")
-      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-      .text(d => d.name || d.title);
+        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
+        .text(d => d.name || d.title);
 
     this.simulation.nodes(this.nodes);
     this.simulation.force("link").links(this.links);
     this.simulation.alpha(1).restart();
-  }
+}
+
 
   redrawGroups(groups = []) {
     // If groups are not provided, recalculate them
