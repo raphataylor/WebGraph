@@ -212,12 +212,6 @@ class DataManager {
       await this.saveData();
     }
   
-    // Clear all bookmarks and tags
-    async clearAll() {
-      this.data = { spaces: [{ id: "space1", name: "Personal Bookmarks", tags: [], sites: [] }] };
-      await this.saveData();
-    }
-  
     // Get all bookmarks
     async getBookmarks() {
     await this.loadData();
