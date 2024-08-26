@@ -54,7 +54,7 @@ class GraphVisualization {
     this.container = this.svg.append("g");
     this.createVisualization();
     this.loadBookmarksData();
-}
+  }
 
   setupEventListeners() {
     d3.select("#node-size").on("input", () => {
@@ -125,11 +125,6 @@ class GraphVisualization {
       this.highlightNodes(searchTerm);
     });
 
-    /* searchBar.addEventListener('blur', () => {
-      searchBar.value = ''; // Clear the search bar
-      this.highlightNodes(''); // Clear all highlighting
-    }); */
-
     d3.select("#go-to-link").on("click", () => this.goToLink());
     d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
     d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
@@ -169,7 +164,7 @@ class GraphVisualization {
             resolve();
         });
     });
-}
+  }
 
   saveForceSettings() {
     const settings = {
@@ -219,51 +214,51 @@ class GraphVisualization {
     this.saveForceSettings();
     this.updateSimulation();
     console.log("Reset to default settings.");
-}
-
-async loadBookmarksData() {
-  try {
-      const data = await this.dataManager.loadData();
-      const space = data.spaces[0];
-      if (!space) throw new Error("No space found in data");
-
-      const tags = space.tags || [];
-      const sites = space.sites || [];
-
-      this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
-
-      this.nodes = [...tags, ...sites];
-      this.links = this.createLinks(sites);
-
-      const groups = this.createGroups(tags, sites);
-
-      if (!this.simulation) {
-          this.createVisualization();
-      }
-
-      this.updateVisualization(groups);
-  } catch (error) {
-      console.error("Error loading data:", error);
   }
-}
 
-
-async clearAllBookmarks() {
-  if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
+  async loadBookmarksData() {
     try {
-      await this.dataManager.clearAll();
-      this.nodes = [];
-      this.links = [];
-      this.updateVisualization();
-      // Clear the sidebar
-      this.updateSidebar({});
-      // Clear the action buttons
-      this.updateActionButtons({});
+        const data = await this.dataManager.loadData();
+        const space = data.spaces[0];
+        if (!space) throw new Error("No space found in data");
+
+        const tags = space.tags || [];
+        const sites = space.sites || [];
+
+        this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
+
+        this.nodes = [...tags, ...sites];
+        this.links = this.createLinks(sites);
+
+        const groups = this.createGroups(tags, sites);
+
+        if (!this.simulation) {
+            this.createVisualization();
+        }
+
+        this.updateVisualization(groups);
     } catch (error) {
-      console.error("Error clearing bookmarks:", error);
+        console.error("Error loading data:", error);
     }
   }
-}
+
+
+  async clearAllBookmarks() {
+    if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
+      try {
+        await this.dataManager.clearAll();
+        this.nodes = [];
+        this.links = [];
+        this.updateVisualization();
+        // Clear the sidebar
+        this.updateSidebar({});
+        // Clear the action buttons
+        this.updateActionButtons({});
+      } catch (error) {
+        console.error("Error clearing bookmarks:", error);
+      }
+    }
+  }
 
   createVisualization() {
     this.simulation = d3.forceSimulation()
@@ -295,20 +290,24 @@ async clearAllBookmarks() {
             console.warn(`No tags found for site ${site.id}`);
         }
     });
+    console.log('Created links:', links);
     return links;
-}
+  }
 
-createGroups(tags, sites) {
+  createGroups(tags, sites) {
     if (!tags || !sites) {
         console.error("Tags or sites are undefined");
         return [];
     }
     
-    return tags.map(tag => ({
+    const groups = tags.map(tag => ({
         id: tag.id,
         nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
     }));
-}
+    
+    console.log('Created groups:', groups);
+    return groups;
+  }
 
 
 
@@ -335,7 +334,7 @@ createGroups(tags, sites) {
     
     const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
     return hull ? `M${hull.join("L")}Z` : "";
-}
+  }
 
 
 
@@ -452,6 +451,11 @@ createGroups(tags, sites) {
       groups = this.createGroups(tags, sites);
     }
 
+    console.log('Updating visualization with:');
+    console.log('Nodes:', this.nodes);
+    console.log('Links:', this.links);
+    console.log('Groups:', groups);
+
     // Draw groups first (background layer)
     this.drawGroups(groups);
 
@@ -517,7 +521,7 @@ createGroups(tags, sites) {
     this.simulation.nodes(this.nodes);
     this.simulation.force("link").links(this.links);
     this.simulation.alpha(1).restart();
-}
+  }
 
 
   redrawGroups(groups = []) {
