@@ -25,31 +25,41 @@ class DataManager {
   }
 
   async loadInitialData() {
-    const response = await fetch(chrome.runtime.getURL('data/bookmarks.json'));
-    const initialData = await response.json();
-    this.data = initialData;
-    await this.saveData();
-    return this.data;
+    try {
+      const response = await fetch(chrome.runtime.getURL('data/bookmarks.json'));
+      const initialData = await response.json();
+      this.data = initialData;
+      await this.saveData();
+      return this.data;
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      throw error;
+    }
   }
 
   async loadData() {
-    await this.initDB();
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.get('webgraph_data', async (result) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          if (!result.webgraph_data) {
-            // If no data exists, load the initial data
-            this.data = await this.loadInitialData();
+    try {
+      await this.initDB();
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get('webgraph_data', async (result) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
           } else {
-            this.data = result.webgraph_data;
+            if (!result.webgraph_data) {
+              // If no data exists, load the initial data
+              this.data = await this.loadInitialData();
+            } else {
+              this.data = result.webgraph_data;
+            }
+            console.log('Loaded data:', JSON.stringify(this.data, null, 2));
+            resolve(this.data);
           }
-          console.log('Loaded data:', JSON.stringify(this.data, null, 2));
-          resolve(this.data);
-        }
+        });
       });
-    });
+    } catch (error) {
+      console.error("Error loading data:", error);
+      throw error;
+    }
   }
 
   async saveData() {
@@ -68,19 +78,23 @@ class DataManager {
   }
 
   async addBookmark(bookmark) {
+    if (!bookmark || typeof bookmark !== 'object') {
+      throw new Error('Invalid bookmark object');
+    }
+
     console.log("Adding bookmark:", bookmark);
     await this.loadData();
     const space = this.data.spaces[0];
     const newId = 'site' + (space.sites.length + 1);
     const newBookmark = {
       id: newId,
-      title: bookmark.title,
-      url: bookmark.url,
-      tags: bookmark.tags,
-      dateCreated: bookmark.dateCreated,
-      visits: bookmark.visits,
-      notes: bookmark.notes,
-      favicon: bookmark.favicon
+      title: bookmark.title || 'Untitled',
+      url: bookmark.url || '',
+      tags: Array.isArray(bookmark.tags) ? bookmark.tags : [],
+      dateCreated: bookmark.dateCreated || new Date().toISOString(),
+      visits: bookmark.visits || 0,
+      notes: bookmark.notes || '',
+      favicon: bookmark.favicon || ''
     };
 
     if (bookmark.snapshot) {
@@ -90,7 +104,7 @@ class DataManager {
     console.log("New bookmark object created:", newBookmark);
     space.sites.push(newBookmark);
 
-    bookmark.tags.forEach(tagName => {
+    newBookmark.tags.forEach(tagName => {
       if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
         space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
       }
@@ -100,6 +114,32 @@ class DataManager {
     await this.saveData();
     console.log("Data saved successfully");
     return newBookmark;
+  }
+
+  async updateBookmark(bookmarkId, updatedData) {
+    await this.loadData();
+    const space = this.data.spaces[0];
+    const bookmarkIndex = space.sites.findIndex(site => site.id === bookmarkId);
+    if (bookmarkIndex !== -1) {
+      space.sites[bookmarkIndex] = { ...space.sites[bookmarkIndex], ...updatedData };
+      
+      // Update tags
+      if (updatedData.tags) {
+        updatedData.tags.forEach(tagName => {
+          if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+            space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
+          }
+        });
+      }
+      
+      // Remove orphaned tags
+      const allTags = new Set(space.sites.flatMap(site => site.tags));
+      space.tags = space.tags.filter(tag => allTags.has(tag.name));
+
+      await this.saveData();
+      return space.sites[bookmarkIndex];
+    }
+    throw new Error('Bookmark not found');
   }
 
   async saveSnapshot(id, snapshot) {
@@ -184,29 +224,6 @@ class DataManager {
     return this.data.spaces[0].tags;
     }
   
-    // Update a bookmark
-    async updateBookmark(bookmarkId, updatedData) {
-      await this.loadData();
-      const space = this.data.spaces[0];
-      const bookmarkIndex = space.sites.findIndex(site => site.id === bookmarkId);
-      if (bookmarkIndex !== -1) {
-        space.sites[bookmarkIndex] = { ...space.sites[bookmarkIndex], ...updatedData };
-        
-        // Update tags
-        if (updatedData.tags) {
-          updatedData.tags.forEach(tagName => {
-            if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
-              space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
-            }
-          });
-        }
-        
-        await this.saveData();
-        return space.sites[bookmarkIndex];
-      }
-      throw new Error('Bookmark not found');
-    }
-  
     // Update a tag
     async updateTag(tagId, newName) {
       await this.loadData();
@@ -220,14 +237,12 @@ class DataManager {
       throw new Error('Tag not found');
     }
 
-    // Clear all bookmarks and tags
     async clearAll() {
       this.data = { spaces: [{ id: "space1", name: "Personal Bookmarks", tags: [], sites: [] }] };
       await this.saveData();
       await this.clearAllSnapshots();
     }
   
-    // Clear all snapshots from IndexedDB
     async clearAllSnapshots() {
       return new Promise((resolve, reject) => {
         const transaction = this.db.transaction(['snapshots'], 'readwrite');

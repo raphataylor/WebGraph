@@ -292,15 +292,15 @@ class GraphVisualization {
 
   createGroups(tags, sites) {
     if (!tags || !sites) {
-        console.error("Tags or sites are undefined");
-        return [];
+      console.error("Tags or sites are undefined");
+      return [];
     }
     
     return tags.map(tag => ({
-        id: tag.id,
-        nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
+      id: tag.id,
+      nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
     }));
-}
+  }
 
 
   drawGroups(groups) {
@@ -342,7 +342,7 @@ class GraphVisualization {
   drawNodes(nodes) {
     const node = this.container.selectAll(".node")
       .data(nodes)
-      .join("g")  // Use join instead of enter().append()
+      .join("g")
       .attr("class", d => "node " + (d.tags ? "site" : "tag"))
       .call(d3.drag()
         .on("start", (event, d) => this.dragstarted(event, d))
@@ -365,7 +365,7 @@ class GraphVisualization {
     node.selectAll("image")
       .data(d => d.tags && d.favicon ? [d] : [])
       .join("image")
-      .attr("xlink:href", d => d.favicon)
+      .attr("xlink:href", d => d.favicon || "assets/defaultfavicon.png")
       .attr("x", -this.nodeSize * 0.8)
       .attr("y", -this.nodeSize * 0.8)
       .attr("width", this.nodeSize * 1.6)
@@ -376,9 +376,9 @@ class GraphVisualization {
       .join("title")
       .text(d => {
         if (d.tags) {
-          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
+          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes || 'No notes'}`;
         } else {
-          return `${d.name}\nSites: ${d.childCount}`;
+          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
         }
       });
   }
@@ -605,6 +605,10 @@ class GraphVisualization {
     const tagContainer = document.getElementById('tag-container');
     const tagInput = document.getElementById('tag-input');
   
+    if (!node.tags) {
+      node.tags = [];
+    }
+
     this.renderTags(node, tagContainer);
   
     tagInput.addEventListener('keydown', async (e) => {
@@ -613,12 +617,17 @@ class GraphVisualization {
         const newTag = tagInput.value.trim();
         if (newTag && !node.tags.includes(newTag)) {
           node.tags.push(newTag);
-          await this.updateNodeTags(node);
-          this.renderTags(node, tagContainer);
-          tagInput.value = '';
-          
-          // Update the graph
-          await this.loadBookmarksData();
+          try {
+            await this.updateNodeTags(node);
+            this.renderTags(node, tagContainer);
+            tagInput.value = '';
+            
+            // Update the graph
+            await this.loadBookmarksData();
+          } catch (error) {
+            console.error("Error updating tags:", error);
+            // Optionally, show an error message to the user
+          }
         }
       }
     });
@@ -645,21 +654,22 @@ class GraphVisualization {
 
   async updateNodeTags(node) {
     try {
-        await this.dataManager.updateBookmark(node.id, { tags: node.tags });
-        const data = await this.dataManager.loadData();
-        const tags = data.spaces[0].tags || [];
-        const sites = data.spaces[0].sites || [];
-        
-        this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
-        this.nodes = [...tags, ...sites];
-        this.links = this.createLinks(sites);
-        const groups = this.createGroups(tags, sites);
+      await this.dataManager.updateBookmark(node.id, { tags: node.tags });
+      const data = await this.dataManager.loadData();
+      const tags = data.spaces[0].tags || [];
+      const sites = data.spaces[0].sites || [];
+      
+      this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
+      this.nodes = [...tags, ...sites];
+      this.links = this.createLinks(sites);
+      const groups = this.createGroups(tags, sites);
 
-        this.updateVisualization(groups);  // Pass the groups to the visualization update
+      this.updateVisualization(groups);
     } catch (error) {
-        console.error("Error updating bookmark tags:", error);
+      console.error("Error updating bookmark tags:", error);
+      throw error; // Re-throw the error so it can be caught by the caller
     }
-}
+  }
 
 
   setupSnapshotResize() {
