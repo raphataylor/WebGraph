@@ -144,7 +144,8 @@ body, html {
 }
 
 .node.tag circle {
-    fill: #9ccea9;
+    fill: #ffffff;
+    fill-opacity: 0.6;
 }
 
 .group {
