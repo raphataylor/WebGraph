@@ -170,10 +170,10 @@ class GraphRenderer {
     this.simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.1))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(0.7))
-      .force("x", d3.forceX(width / 2).strength(0.1))
-      .force("y", d3.forceY(height / 2).strength(0.1))
+      .force("center", d3.forceCenter(width / 2, height / 2).strength(settings.gravityStrength))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(settings.collisionStrength))
+      .force("x", d3.forceX(width / 2).strength(settings.xyForceStrength))
+      .force("y", d3.forceY(height / 2).strength(settings.xyForceStrength))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -207,10 +207,10 @@ class GraphRenderer {
     this.simulation
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(0.1))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(0.7))
-      .force("x", d3.forceX(this.width / 2).strength(0.1))
-      .force("y", d3.forceY(this.height / 2).strength(0.1))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(settings.gravityStrength))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(settings.collisionStrength))
+      .force("x", d3.forceX(this.width / 2).strength(settings.xyForceStrength))
+      .force("y", d3.forceY(this.height / 2).strength(settings.xyForceStrength))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -386,7 +386,8 @@ class InteractionHandler {
       { id: "alpha", property: "alpha" },
       { id: "alpha-decay", property: "alphaDecay" },
       { id: "alpha-min", property: "alphaMin" },
-      { id: "velocity-decay", property: "velocityDecay" }
+      { id: "velocity-decay", property: "velocityDecay" },
+      { id: "xy-force-strength", property: "xyForceStrength" }
     ];
 
     controls.forEach(control => {
@@ -509,16 +510,17 @@ class SettingsManager {
   constructor() {
     this.settings = {
       nodeSize: 10,
-      linkSize: 2,
+      linkSize: 1,
       textSize: 12,
-      charge: -100,
+      charge: -350,
       linkDistance: 30,
       collisionStrength: 0.7,
       gravityStrength: 0.1,
       alpha: 1,
       alphaDecay: 0.0228,
       alphaMin: 0.001,
-      velocityDecay: 0.4
+      velocityDecay: 0.4,
+      xyForceStrength: 0.05
     };
     this.defaultSettings = { ...this.settings };
   }
