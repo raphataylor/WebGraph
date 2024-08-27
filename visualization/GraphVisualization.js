@@ -162,16 +162,18 @@ class GraphRenderer {
     this.width = width;
     this.height = height;
     this.settings = settings;
-    
+
     this.svg
       .attr("width", this.width)
       .attr("height", this.height);
 
-      this.simulation = d3.forceSimulation()
+    this.simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 3).strength(settings.collisionStrength))
+      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.1))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(0.7))
+      .force("x", d3.forceX(width / 2).strength(0.1))
+      .force("y", d3.forceY(height / 2).strength(0.1))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -205,8 +207,10 @@ class GraphRenderer {
     this.simulation
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(settings.gravityStrength))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 3).strength(settings.collisionStrength))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(0.1))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(0.7))
+      .force("x", d3.forceX(this.width / 2).strength(0.1))
+      .force("y", d3.forceY(this.height / 2).strength(0.1))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -506,10 +510,10 @@ class SettingsManager {
     this.settings = {
       nodeSize: 10,
       linkSize: 2,
-      textSize: 12, 
-      charge: -200,
-      linkDistance: 50,
-      collisionStrength: 0.5,
+      textSize: 12,
+      charge: -100,
+      linkDistance: 30,
+      collisionStrength: 0.7,
       gravityStrength: 0.1,
       alpha: 1,
       alphaDecay: 0.0228,
