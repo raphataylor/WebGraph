@@ -87,10 +87,7 @@ class DataManager {
     const space = this.data.spaces[0];
 
     // Generate a unique ID
-    let newId;
-    do {
-      newId = 'site' + Math.floor(Math.random() * 1000000);
-    } while (space.sites.some(site => site.id === newId));
+    const newId = this.generateUniqueId('site', space.sites);
 
     const newBookmark = {
       id: newId,
@@ -151,9 +148,9 @@ class DataManager {
   addOrUpdateTag(space, tagName, bookmark) {
     const normalizedTagName = tagName.trim().toLowerCase();
     let existingTag = space.tags.find(t => t.name.toLowerCase() === normalizedTagName);
-    
+
     if (!existingTag) {
-      const newTagId = 'tag' + (space.tags.length + 1);
+      const newTagId = this.generateUniqueId('tag', space.tags);
       existingTag = { id: newTagId, name: tagName.trim() };
       space.tags.push(existingTag);
     }
@@ -161,6 +158,14 @@ class DataManager {
     if (!bookmark.tags.includes(existingTag.name)) {
       bookmark.tags.push(existingTag.name);
     }
+  }
+
+  generateUniqueId(prefix, existingItems) {
+    let newId;
+    do {
+      newId = prefix + Math.floor(Math.random() * 1000000);
+    } while (existingItems.some(item => item.id === newId));
+    return newId;
   }
 
   removeOrphanedTags(space) {
