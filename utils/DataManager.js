@@ -51,7 +51,7 @@ class DataManager {
             } else {
               this.data = result.webgraph_data;
             }
-            console.log('Loaded data:', JSON.stringify(this.data, null, 2));
+            console.log('DataManger.js Loaded data:', JSON.stringify(this.data, null, 2));
             resolve(this.data);
           }
         });
@@ -85,18 +85,15 @@ class DataManager {
     console.log("Adding bookmark:", bookmark);
     await this.loadData();
     const space = this.data.spaces[0];
-    
+
     // Generate a unique ID
-    let newId;
-    do {
-      newId = 'site' + Math.floor(Math.random() * 1000000);
-    } while (space.sites.some(site => site.id === newId));
+    const newId = this.generateUniqueId('site', space.sites);
 
     const newBookmark = {
       id: newId,
       title: bookmark.title || 'Untitled',
       url: bookmark.url || '',
-      tags: Array.isArray(bookmark.tags) ? bookmark.tags : [],
+      tags: [],
       dateCreated: bookmark.dateCreated || new Date().toISOString(),
       visits: bookmark.visits || 0,
       notes: bookmark.notes || '',
@@ -110,11 +107,12 @@ class DataManager {
     console.log("New bookmark object created:", newBookmark);
     space.sites.push(newBookmark);
 
-    newBookmark.tags.forEach(tagName => {
-      if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
-        space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
-      }
-    });
+    // Update tags, ensuring unique IDs and names
+    if (Array.isArray(bookmark.tags)) {
+      bookmark.tags.forEach(tagName => {
+        this.addOrUpdateTag(space, tagName, newBookmark);
+      });
+    }
 
     console.log("Saving data...");
     await this.saveData();
@@ -127,25 +125,52 @@ class DataManager {
     const space = this.data.spaces[0];
     const bookmarkIndex = space.sites.findIndex(site => site.id === bookmarkId);
     if (bookmarkIndex !== -1) {
-      space.sites[bookmarkIndex] = { ...space.sites[bookmarkIndex], ...updatedData };
-      
-      // Update tags
+      const updatedBookmark = { ...space.sites[bookmarkIndex], ...updatedData };
+      space.sites[bookmarkIndex] = updatedBookmark;
+
+      // Update tags, ensuring unique IDs and names
       if (updatedData.tags) {
+        updatedBookmark.tags = [];
         updatedData.tags.forEach(tagName => {
-          if (!space.tags.some(t => t.name.toLowerCase() === tagName.toLowerCase())) {
-            space.tags.push({ id: 'tag' + (space.tags.length + 1), name: tagName });
-          }
+          this.addOrUpdateTag(space, tagName, updatedBookmark);
         });
       }
-      
+
       // Remove orphaned tags
-      const allTags = new Set(space.sites.flatMap(site => site.tags));
-      space.tags = space.tags.filter(tag => allTags.has(tag.name));
+      this.removeOrphanedTags(space);
 
       await this.saveData();
-      return space.sites[bookmarkIndex];
+      return updatedBookmark;
     }
     throw new Error('Bookmark not found');
+  }
+
+  addOrUpdateTag(space, tagName, bookmark) {
+    const normalizedTagName = tagName.trim().toLowerCase();
+    let existingTag = space.tags.find(t => t.name.toLowerCase() === normalizedTagName);
+
+    if (!existingTag) {
+      const newTagId = this.generateUniqueId('tag', space.tags);
+      existingTag = { id: newTagId, name: tagName.trim() };
+      space.tags.push(existingTag);
+    }
+
+    if (!bookmark.tags.includes(existingTag.name)) {
+      bookmark.tags.push(existingTag.name);
+    }
+  }
+
+  generateUniqueId(prefix, existingItems) {
+    let newId;
+    do {
+      newId = prefix + Math.floor(Math.random() * 1000000);
+    } while (existingItems.some(item => item.id === newId));
+    return newId;
+  }
+
+  removeOrphanedTags(space) {
+    const usedTags = new Set(space.sites.flatMap(site => site.tags.map(tag => tag.toLowerCase())));
+    space.tags = space.tags.filter(tag => usedTags.has(tag.name.toLowerCase()));
   }
 
   async saveSnapshot(id, snapshot) {

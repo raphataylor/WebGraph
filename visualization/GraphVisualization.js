@@ -4,406 +4,325 @@ class GraphVisualization {
   constructor(element) {
     this.element = element;
     this.dataManager = new DataManager();
+    this.renderer = new GraphRenderer(element, this);
+    this.interactionHandler = new InteractionHandler(this);
+    this.settingsManager = new SettingsManager();
+    this.sidebarManager = new SidebarManager(this);
+    
     this.width = window.innerWidth - 500; // Adjust for sidebars
     this.height = window.innerHeight;
     this.color = d3.scaleOrdinal(d3.schemeCategory10);
-    this.svg = null;
-    this.container = null;
-    this.simulation = null;
-    this.defaultSettings = {
-      nodeSize: 10,
-      linkSize: 2,
-      charge: -200,
-      linkDistance: 50,
-      collisionStrength: 0.5,
-      gravityStrength: 0.1,
-      alpha: 1,
-      alphaDecay: 0.0228,
-      alphaMin: 0.001,
-      velocityDecay: 0.4
-    };
-    this.nodeSize = this.defaultSettings.nodeSize;
-    this.linkSize = this.defaultSettings.linkSize;
-    this.charge = this.defaultSettings.charge;
-    this.linkDistance = this.defaultSettings.linkDistance;
-    this.collisionStrength = this.defaultSettings.collisionStrength;
-    this.gravityStrength = this.defaultSettings.gravityStrength;
-    this.alpha = this.defaultSettings.alpha;
-    this.alphaDecay = this.defaultSettings.alphaDecay;
-    this.alphaMin = this.defaultSettings.alphaMin;
-    this.velocityDecay = this.defaultSettings.velocityDecay;
+    
     this.nodes = [];
     this.links = [];
     this.tagMap = new Map();
     this.selectedNode = null;
-    this.showWelcomeScreen = true;
+    
     this.initializeGraph();
     this.setupEventListeners();
     this.checkAndShowWelcomeScreen();
   }
 
   async initializeGraph() {
-    await this.loadForceSettings();  
-    this.svg = d3.select(this.element).append("svg")
-        .attr("width", this.width)
-        .attr("height", this.height)
-        .call(d3.zoom().on("zoom", (event) => {
-            this.container.attr("transform", event.transform);
-        }));
-
-    this.container = this.svg.append("g");
-    this.createVisualization();
-    this.loadBookmarksData();
+    await this.settingsManager.loadSettings();
+    this.renderer.createVisualization(this.width, this.height, this.settingsManager.settings);
+    await this.loadBookmarksData();
   }
 
   setupEventListeners() {
-    d3.select("#node-size").on("input", () => {
-      this.nodeSize = +d3.select("#node-size").property("value");
-      this.saveForceSettings();
-      this.updateVisualization();
-      this.redrawGroups();
-    });
-
-    d3.select("#link-size").on("input", () => {
-      this.linkSize = +d3.select("#link-size").property("value");
-      this.saveForceSettings();
-      this.updateVisualization();
-      this.redrawGroups();
-    });
-
-    d3.select("#charge").on("input", () => {
-      this.charge = +d3.select("#charge").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#link-distance").on("input", () => {
-      this.linkDistance = +d3.select("#link-distance").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#collision-strength").on("input", () => {
-      this.collisionStrength = +d3.select("#collision-strength").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#gravity-strength").on("input", () => {
-      this.gravityStrength = +d3.select("#gravity-strength").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#alpha").on("input", () => {
-      this.alpha = +d3.select("#alpha").property("value");
-      this.saveForceSettings();
-      this.simulation.alpha(this.alpha);
-    });
-
-    d3.select("#alpha-decay").on("input", () => {
-      this.alphaDecay = +d3.select("#alpha-decay").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#alpha-min").on("input", () => {
-      this.alphaMin = +d3.select("#alpha-min").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    d3.select("#velocity-decay").on("input", () => {
-      this.velocityDecay = +d3.select("#velocity-decay").property("value");
-      this.saveForceSettings();
-      this.updateSimulation();
-    });
-
-    const searchBar = document.getElementById('search-bar');
-    searchBar.addEventListener('input', (event) => {
-      const searchTerm = event.target.value.toLowerCase();
-      this.highlightNodes(searchTerm);
-    });
-
-    d3.select("#go-to-link").on("click", () => this.goToLink());
-    d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
-    d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
+    this.interactionHandler.setup();
     d3.select("#reset-defaults").on("click", () => this.resetToDefaults());
   }
 
-  async loadForceSettings() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get('forceSettings', (result) => {
-            if (result.forceSettings) {
-                const settings = result.forceSettings;
-                this.nodeSize = settings.nodeSize;
-                this.linkSize = settings.linkSize;
-                this.charge = settings.charge;
-                this.linkDistance = settings.linkDistance;
-                this.collisionStrength = settings.collisionStrength;
-                this.gravityStrength = settings.gravityStrength;
-                this.alpha = settings.alpha;
-                this.alphaDecay = settings.alphaDecay;
-                this.alphaMin = settings.alphaMin;
-                this.velocityDecay = settings.velocityDecay;
-
-                // Update the controls with the loaded values
-                d3.select("#node-size").property("value", this.nodeSize);
-                d3.select("#link-size").property("value", this.linkSize);
-                d3.select("#charge").property("value", this.charge);
-                d3.select("#link-distance").property("value", this.linkDistance);
-                d3.select("#collision-strength").property("value", this.collisionStrength);
-                d3.select("#gravity-strength").property("value", this.gravityStrength);
-                d3.select("#alpha").property("value", this.alpha);
-                d3.select("#alpha-decay").property("value", this.alphaDecay);
-                d3.select("#alpha-min").property("value", this.alphaMin);
-                d3.select("#velocity-decay").property("value", this.velocityDecay);
-
-                console.log("Force settings loaded:", settings);
-            }
-            resolve();
-        });
-    });
-  }
-
-  saveForceSettings() {
-    const settings = {
-        nodeSize: this.nodeSize,
-        linkSize: this.linkSize,
-        charge: this.charge,
-        linkDistance: this.linkDistance,
-        collisionStrength: this.collisionStrength,
-        gravityStrength: this.gravityStrength,
-        alpha: this.alpha,
-        alphaDecay: this.alphaDecay,
-        alphaMin: this.alphaMin,
-        velocityDecay: this.velocityDecay
-    };
-
-    chrome.storage.local.set({ forceSettings: settings }, () => {
-        console.log("Force settings saved:", settings);
-    });
-  }
-
   resetToDefaults() {
-    // Reset to default settings
-    this.nodeSize = this.defaultSettings.nodeSize;
-    this.linkSize = this.defaultSettings.linkSize;
-    this.charge = this.defaultSettings.charge;
-    this.linkDistance = this.defaultSettings.linkDistance;
-    this.collisionStrength = this.defaultSettings.collisionStrength;
-    this.gravityStrength = this.defaultSettings.gravityStrength;
-    this.alpha = this.defaultSettings.alpha;
-    this.alphaDecay = this.defaultSettings.alphaDecay;
-    this.alphaMin = this.defaultSettings.alphaMin;
-    this.velocityDecay = this.defaultSettings.velocityDecay;
+    this.settingsManager.resetToDefaults();
 
-    // Update UI controls to reflect default values
-    d3.select("#node-size").property("value", this.nodeSize);
-    d3.select("#link-size").property("value", this.linkSize);
-    d3.select("#charge").property("value", this.charge);
-    d3.select("#link-distance").property("value", this.linkDistance);
-    d3.select("#collision-strength").property("value", this.collisionStrength);
-    d3.select("#gravity-strength").property("value", this.gravityStrength);
-    d3.select("#alpha").property("value", this.alpha);
-    d3.select("#alpha-decay").property("value", this.alphaDecay);
-    d3.select("#alpha-min").property("value", this.alphaMin);
-    d3.select("#velocity-decay").property("value", this.velocityDecay);
+    this.renderer.updateSettingsAndRedraw(this.settingsManager.settings);
 
-    // Save default settings and update the simulation
-    this.saveForceSettings();
-    this.updateSimulation();
     console.log("Reset to default settings.");
   }
 
   async loadBookmarksData() {
     try {
-        const data = await this.dataManager.loadData();
-        const space = data.spaces[0];
-        if (!space) throw new Error("No space found in data");
+      const data = await this.dataManager.loadData();
+      const space = data.spaces[0];
+      if (!space) throw new Error("No space found in data");
 
-        const tags = space.tags || [];
-        const sites = space.sites || [];
+      const tags = space.tags || [];
+      const sites = space.sites || [];
 
-        this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
+      this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
 
-        this.nodes = [...tags, ...sites];
-        this.links = this.createLinks(sites);
+      this.nodes = [...tags, ...sites];
+      this.links = DataUtils.createLinks(sites, this.tagMap);
 
-        const groups = this.createGroups(tags, sites);
+      const groups = DataUtils.createGroups(tags, sites);
 
-        if (!this.simulation) {
-            this.createVisualization();
-        }
-
-        this.updateVisualization(groups);
+      this.renderer.updateVisualization(this.nodes, this.links, groups);
     } catch (error) {
-        console.error("Error loading data:", error);
+      console.error("Error loading data:", error);
     }
   }
 
+  handleNodeClick(node) {
+    this.selectedNode = node;
+    this.sidebarManager.updateSidebar(node);
+    this.sidebarManager.updateActionButtons(node);
+  }
 
-  async clearAllBookmarks() {
-    if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
-      try {
-        await this.dataManager.clearAll();
-        this.nodes = [];
-        this.links = [];
-        this.updateVisualization();
-        // Clear the sidebar
-        this.updateSidebar({});
-        // Clear the action buttons
-        this.updateActionButtons({});
-      } catch (error) {
-        console.error("Error clearing bookmarks:", error);
+  async updateNodeTags(node) {
+    try {
+      await this.dataManager.updateBookmark(node.id, { tags: node.tags });
+      await this.loadBookmarksData(); // Reload and redraw the entire graph
+    } catch (error) {
+      console.error("Error updating bookmark tags:", error);
+      throw error;
+    }
+  }
+
+  checkAndShowWelcomeScreen() {
+    chrome.storage.local.get(['showWelcomeScreen'], (result) => {
+      if (result.showWelcomeScreen) {
+        this.displayWelcomeScreen();
+        chrome.storage.local.set({ showWelcomeScreen: false });
       }
-    }
+    });
   }
 
-  createVisualization() {
-    this.simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id(d => d.id).distance(this.linkDistance))
-      .force("charge", d3.forceManyBody().strength(this.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-      .force("collision", d3.forceCollide().radius(this.nodeSize * 3).strength(this.collisionStrength))
-      .alpha(this.alpha)
-      .alphaDecay(this.alphaDecay)
-      .alphaMin(this.alphaMin)
-      .velocityDecay(this.velocityDecay);
-  
+  async removeNodeFromVisualization(node) {
+    this.nodes = this.nodes.filter(n => n.id !== node.id);
+    this.links = this.links.filter(link => link.source.id !== node.id && link.target.id !== node.id);
+
+    const tags = this.nodes.filter(n => !n.tags);
+    const sites = this.nodes.filter(n => n.tags);
+    const groups = DataUtils.createGroups(tags, sites);
+
+    this.selectedNode = null;
+    this.renderer.updateVisualization(this.nodes, this.links, groups);
+    this.sidebarManager.updateSidebar({});
+    this.sidebarManager.updateActionButtons({});
+  }
+
+  displayWelcomeScreen() {
+    const welcomeScreen = document.createElement('div');
+    welcomeScreen.id = 'welcome-screen';
+    welcomeScreen.innerHTML = `
+      <div class="welcome-content">
+        <h2>Welcome to WebGraph!</h2>
+        <p>Here's a quick guide to get you started:</p>
+        <ul>
+          <li>Pan and zoom the graph using your mouse or touchpad</li>
+          <li>Click on nodes to view details in the sidebar</li>
+          <li>Drag nodes to rearrange the graph</li>
+          <li>Use the search bar to find specific nodes</li>
+          <li>Adjust graph settings in the left sidebar</li>
+          <li>Add bookmarks by browsing the web and hitting Ctrl + Shift + Y or Cmd + Shift + Y for MacOS</li>
+          <li>Add multiple tags to see a self-organising, semantic structure build up as you add more bookmarks</li>
+          <li>An example data set has been pre-loaded so you can get a feel for how the graph can look</li>
+          <li>Click "Clear All Bookmarks" to begin your own graph!</li>
+        </ul>
+        <button id="close-welcome">Got it, let's start!</button>
+      </div>
+    `;
+    document.body.appendChild(welcomeScreen);
+
+    document.getElementById('close-welcome').addEventListener('click', () => {
+      welcomeScreen.style.display = 'none';
+    });
+  }
+}
+
+class GraphRenderer {
+  constructor(element, graphVisualization) {
+    this.graphVisualization = graphVisualization;
+    this.svg = d3.select(element).append("svg");
+    this.container = this.svg.append("g");
+    this.width = window.innerWidth - 500;
+    this.height = window.innerHeight;
+    this.color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.simulation = null;
+    this.nodeElements = null;
+    this.linkElements = null;
+    this.groupElements = null;
+
+    this.setupZoom();
+  }
+
+  setupZoom() {
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 10])
+      .on("zoom", (event) => {
+        this.container.attr("transform", event.transform);
+      });
+
+    this.svg.call(zoom);
+  }
+
+  createVisualization(width, height, settings) {
+    this.width = width;
+    this.height = height;
+    this.settings = settings;
+    
+    this.svg
+      .attr("width", this.width)
+      .attr("height", this.height);
+
+      this.simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
+      .force("charge", d3.forceManyBody().strength(settings.charge))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 3).strength(settings.collisionStrength))
+      .alpha(settings.alpha)
+      .alphaDecay(settings.alphaDecay)
+      .alphaMin(settings.alphaMin)
+      .velocityDecay(settings.velocityDecay);
+
     this.simulation.on("tick", () => this.ticked());
   }
 
-  createLinks(sites) {
-    const links = [];
-    sites.forEach(site => {
-        if (site.tags) {
-            site.tags.forEach(tagName => {
-                const lowercaseTagName = tagName.toLowerCase();
-                if (this.tagMap.has(lowercaseTagName)) {
-                    links.push({ source: site.id, target: this.tagMap.get(lowercaseTagName).id });
-                } else {
-                    console.warn(`Tag with name "${tagName}" not found for site ${site.id}`);
-                }
-            });
-        } else {
-            console.warn(`No tags found for site ${site.id}`);
-        }
-    });
-    console.log('Created links:', links);
-    return links;
-  }
-
-  createGroups(tags, sites) {
-    if (!tags || !sites) {
-        console.error("Tags or sites are undefined");
-        return [];
+  ticked() {
+    if (this.linkElements) {
+      this.linkElements
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
     }
-    
-    const groups = tags.map(tag => ({
-        id: tag.id,
-        nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
-    }));
-    
-    console.log('Created groups:', groups);
-    return groups;
-  }
 
-
-
-  drawGroups(groups) {
-    const groupSelection = this.container.selectAll('.group')
-      .data(groups);
-
-    groupSelection.exit().remove();
-
-    groupSelection.enter()
-      .insert('path', ':first-child') // Insert at the beginning to ensure it's behind other elements
-      .attr('class', 'group')
-      .merge(groupSelection)
-      .attr('d', this.groupPath.bind(this))
-      .style("fill", (d, i) => this.color(i))
-      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
-      .style("opacity", 0.3);
-  }
-
-  groupPath(d) {
-    if (!d || !Array.isArray(d.nodes) || d.nodes.length < 3) {
-        return "";  // Safely return an empty string if nodes are not iterable or insufficient for a hull
+    if (this.nodeElements) {
+      this.nodeElements
+        .attr("transform", d => `translate(${d.x},${d.y})`);
     }
-    
-    const hull = d3.polygonHull(d.nodes.map(n => [n.x || 0, n.y || 0]));
-    return hull ? `M${hull.join("L")}Z` : "";
+
+    if (this.groupElements) {
+      this.groupElements
+        .attr("d", this.groupPath.bind(this));
+    }
   }
 
+  updateSimulation(settings) {
+    this.settings = settings;
+    this.simulation
+      .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
+      .force("charge", d3.forceManyBody().strength(settings.charge))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(settings.gravityStrength))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 3).strength(settings.collisionStrength))
+      .alpha(settings.alpha)
+      .alphaDecay(settings.alphaDecay)
+      .alphaMin(settings.alphaMin)
+      .velocityDecay(settings.velocityDecay);
+  }
+
+  updateVisualization(nodes, links, groups) {
+    this.simulation.nodes(nodes);
+    this.simulation.force("link").links(links);
 
 
+    this.drawGroups(groups);
+    this.drawLinks(links);
+    this.drawNodes(nodes);
+
+    this.simulation.alpha(1).restart();
+  }
+
+  updateSettingsAndRedraw(settings) {
+    this.settings = settings;
+    this.updateSimulation(settings);
+
+    // Reassign nodes and links to the simulation
+    this.simulation.nodes(this.graphVisualization.nodes);
+    this.simulation.force("link").links(this.graphVisualization.links);
+
+    // Recalculate groups
+    const tags = this.graphVisualization.nodes.filter(n => !n.tags);
+    const sites = this.graphVisualization.nodes.filter(n => n.tags);
+    const groups = DataUtils.createGroups(tags, sites);
+
+    // Update the visualization with the current nodes, links, and recalculated groups
+    this.updateVisualization(this.graphVisualization.nodes, this.graphVisualization.links, groups);
+
+    // Restart the simulation with a high alpha to reorganize the graph
+    this.simulation.alpha(1).restart();
+  }
 
   drawLinks(links) {
-    console.log(`Drawing ${links.length} links`);
-    this.container.selectAll(".link")
-      .data(links)
-      .enter().append("line")
-      .attr("class", "link")
-      .attr("stroke-width", this.linkSize);
+    this.linkElements = this.container.selectAll(".link")
+      .data(links, d => `${d.source.id}-${d.target.id}`)
+      .join(
+        enter => enter.append("line")
+          .attr("class", "link")
+          .attr("stroke-width", this.settings.linkSize),
+        update => update.attr("stroke-width", this.settings.linkSize),
+        exit => exit.remove()
+      );
   }
 
   drawNodes(nodes) {
-    const node = this.container.selectAll(".node")
-      .data(nodes)
-      .join("g")
-      .attr("class", d => "node " + (d.tags ? "site" : "tag"))
-      .call(d3.drag()
-        .on("start", (event, d) => this.dragstarted(event, d))
-        .on("drag", (event, d) => this.dragged(event, d))
-        .on("end", (event, d) => this.dragended(event, d)))
-      .on("click", (event, d) => this.nodeClicked(d));
-  
-    node.selectAll("circle")
-      .data(d => [d])
-      .join("circle")
-      .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-  
-    node.selectAll("text")
-      .data(d => [d])
-      .join("text")
-      .attr("dy", ".35em")
-      .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-      .text(d => d.name || d.title);
-  
-    node.selectAll("image")
-      .data(d => d.tags && d.favicon ? [d] : [])
-      .join("image")
-      .attr("xlink:href", d => d.favicon || "assets/defaultfavicon.png")
-      .attr("x", -this.nodeSize * 0.8)
-      .attr("y", -this.nodeSize * 0.8)
-      .attr("width", this.nodeSize * 1.6)
-      .attr("height", this.nodeSize * 1.6);
-  
-    node.selectAll("title")
-      .data(d => [d])
-      .join("title")
-      .text(d => {
-        if (d.tags) {
-          return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes || 'No notes'}`;
-        } else {
-          return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
-        }
-      });
+    this.nodeElements = this.container.selectAll(".node")
+      .data(nodes, d => d.id)
+      .join(
+        enter => {
+          const nodeEnter = enter.append("g")
+            .attr("class", d => "node " + (d.tags ? "site" : "tag"))
+            .call(d3.drag()
+              .on("start", (event, d) => this.dragstarted(event, d))
+              .on("drag", (event, d) => this.dragged(event, d))
+              .on("end", (event, d) => this.dragended(event, d)))
+            .on("click", (event, d) => this.graphVisualization.handleNodeClick(d));
+
+          nodeEnter.append("circle")
+            .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
+
+          // Add favicon images for site nodes
+          nodeEnter.filter(d => d.tags && d.favicon)
+            .append("image")
+            .attr("xlink:href", d => d.favicon || "assets/defaultfavicon.png")
+            .attr("x", d => -this.settings.nodeSize * 0.8)
+            .attr("y", d => -this.settings.nodeSize * 0.8)
+            .attr("width", d => this.settings.nodeSize * 1.6)
+            .attr("height", d => this.settings.nodeSize * 1.6);
+
+          nodeEnter.append("text")
+            .attr("dy", ".35em")
+            .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
+            .text(d => d.name || d.title)
+            .style("font-size", `${this.settings.textSize}px`);
+
+          return nodeEnter;
+        },
+        update => update,
+        exit => exit.remove()
+      );
+
+    this.nodeElements.select("circle")
+      .attr("r", d => d.tags ? this.settings.nodeSize : this.settings.nodeSize * 2);
+
+    // Update favicon positions and sizes
+    this.nodeElements.select("image")
+      .attr("x", d => -this.settings.nodeSize * 0.8)
+      .attr("y", d => -this.settings.nodeSize * 0.8)
+      .attr("width", d => this.settings.nodeSize * 1.6)
+      .attr("height", d => this.settings.nodeSize * 1.6);
+
+    this.nodeElements.select("text")
+      .attr("x", d => d.tags ? this.settings.nodeSize * 1.5 : this.settings.nodeSize * 2.5)
+      .text(d => d.name || d.title)
+      .style("font-size", `${this.settings.textSize}px`);
   }
 
-  ticked() {
-    this.container.selectAll(".link")
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
-  
-    this.container.selectAll(".node")
-      .attr("transform", d => `translate(${d.x},${d.y})`);
-  
-    this.container.selectAll(".group")
-      .attr("d", this.groupPath.bind(this));
+  drawGroups(groups) {
+    this.groupElements = this.container.selectAll('.group')
+      .data(groups)
+      .join(
+        enter => enter.insert('path', ':first-child') 
+          .attr('class', 'group')
+          .style("fill", (d, i) => this.color(i))
+          .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
+          .style("opacity", 0.3),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr('d', this.groupPath.bind(this));
   }
 
   groupPath(d) {
@@ -429,152 +348,220 @@ class GraphVisualization {
     d.fy = null;
   }
 
-  updateVisualization(groups = []) {
-    if (!this.simulation) {
-      console.error("Simulation not initialized");
-      return;
-    }
-
-    // Handle the case when there are no nodes
-    if (this.nodes.length === 0) {
-      this.container.selectAll(".group").remove();
-      this.container.selectAll(".link").remove();
-      this.container.selectAll(".node").remove();
-      console.log("All data cleared, visualization reset");
-      return;
-    }
-
-    // Ensure groups are calculated if not provided
-    if (groups.length === 0) {
-      const tags = this.nodes.filter(node => !node.tags);
-      const sites = this.nodes.filter(node => node.tags);
-      groups = this.createGroups(tags, sites);
-    }
-
-    console.log('Updating visualization with:');
-    console.log('Nodes:', this.nodes);
-    console.log('Links:', this.links);
-    console.log('Groups:', groups);
-
-    // Draw groups first (background layer)
-    this.drawGroups(groups);
-
-    // Then draw links
-    const linkSelection = this.container.selectAll(".link")
-      .data(this.links, d => `${d.source.id}-${d.target.id}`);
-    
-    linkSelection.exit().remove();
-    
-    linkSelection.enter()
-      .append("line")
-      .attr("class", "link")
-      .merge(linkSelection)
-      .attr("stroke-width", this.linkSize);
-
-    // Finally, draw nodes (top layer)
-    const nodeSelection = this.container.selectAll(".node")
-      .data(this.nodes, d => d.id);
-    
-    nodeSelection.exit().remove();
-    
-    const nodeEnter = nodeSelection.enter()
-        .append("g")
-        .attr("class", d => "node " + (d.tags ? "site" : "tag"))
-        .call(d3.drag()
-            .on("start", (event, d) => this.dragstarted(event, d))
-            .on("drag", (event, d) => this.dragged(event, d))
-            .on("end", (event, d) => this.dragended(event, d)))
-        .on("click", (event, d) => this.nodeClicked(d));
-
-    nodeEnter.append("circle")
-        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-
-    nodeEnter.append("text")
-        .attr("dy", ".35em")
-        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-        .text(d => d.name || d.title);
-
-    nodeEnter.filter(d => d.tags && d.favicon)
-        .append("image")
-        .attr("xlink:href", d => d.favicon)
-        .attr("x", -this.nodeSize * 0.8)
-        .attr("y", -this.nodeSize * 0.8)
-        .attr("width", this.nodeSize * 1.6)
-        .attr("height", this.nodeSize * 1.6);
-
-    nodeEnter.append("title")
-        .text(d => {
-            if (d.tags) {
-                return `${d.title}\nURL: ${d.url}\nVisits: ${d.visits}\nCreated: ${d.dateCreated}\nNotes: ${d.notes}`;
-            } else {
-                return `${d.name}\nSites: ${this.getAssociatedSitesCount(d)}`;
-            }
-        });
-
-    const nodeUpdate = nodeEnter.merge(nodeSelection);
-    nodeUpdate.select("circle")
-        .attr("r", d => d.tags ? this.nodeSize : this.nodeSize * 2);
-    nodeUpdate.select("text")
-        .attr("x", d => d.tags ? this.nodeSize * 1.5 : this.nodeSize * 2.5)
-        .text(d => d.name || d.title);
-
-    this.simulation.nodes(this.nodes);
-    this.simulation.force("link").links(this.links);
-    this.simulation.alpha(1).restart();
-  }
-
-
-  redrawGroups(groups = []) {
-    // If groups are not provided, recalculate them
-    if (groups.length === 0) {
-      const tags = this.nodes.filter(node => !node.tags);
-      const sites = this.nodes.filter(node => node.tags);
-      groups = this.createGroups(tags, sites);
-    }
-
-    const groupSelection = this.container.selectAll('.group')
-      .data(groups);
-
-    groupSelection.exit().remove();
-
-    groupSelection.enter()
-      .append('path')
-      .attr('class', 'group')
-      .merge(groupSelection)
-      .attr('d', this.groupPath.bind(this))
-      .style("fill", (d, i) => this.color(i))
-      .style("stroke", (d, i) => d3.rgb(this.color(i)).darker())
-      .style("opacity", 0.3);
-  }
-
-  updateSimulation() {
-    this.simulation
-      .force("link", d3.forceLink(this.links).id(d => d.id).distance(this.linkDistance))
-      .force("charge", d3.forceManyBody().strength(this.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(this.gravityStrength))
-      .force("collision", d3.forceCollide().radius(this.nodeSize * 3).strength(this.collisionStrength))
-      .alpha(this.alpha)
-      .alphaDecay(this.alphaDecay)
-      .alphaMin(this.alphaMin)
-      .velocityDecay(this.velocityDecay)
-      .restart();
-  }
-
   highlightNodes(searchTerm) {
-    this.container.selectAll(".node")
-      .classed("highlighted", d => {
-        if (searchTerm === '') {
-          return false; // Remove highlighting when search term is empty
-        }
-        const nodeText = (d.name || d.title || "").toLowerCase();
-        return nodeText.includes(searchTerm);
+    this.nodeElements.classed("highlighted", d => {
+      if (searchTerm === '') {
+        return false;
+      }
+      const nodeText = (d.name || d.title || "").toLowerCase();
+      return nodeText.includes(searchTerm);
+    });
+  }
+}
+
+class InteractionHandler {
+  constructor(graphVisualization) {
+    this.graphVisualization = graphVisualization;
+  }
+
+  setup() {
+    this.setupForceControls();
+    this.setupSearchBar();
+    this.setupActionButtons();
+  }
+
+  setupForceControls() {
+    const controls = [
+      { id: "node-size", property: "nodeSize" },
+      { id: "link-size", property: "linkSize" },
+      { id: "text-size", property: "textSize" },
+      { id: "charge", property: "charge" },
+      { id: "link-distance", property: "linkDistance" },
+      { id: "collision-strength", property: "collisionStrength" },
+      { id: "gravity-strength", property: "gravityStrength" },
+      { id: "alpha", property: "alpha" },
+      { id: "alpha-decay", property: "alphaDecay" },
+      { id: "alpha-min", property: "alphaMin" },
+      { id: "velocity-decay", property: "velocityDecay" }
+    ];
+
+    controls.forEach(control => {
+      const slider = document.getElementById(control.id);
+      slider.value = this.graphVisualization.settingsManager.settings[control.property];
+      slider.addEventListener("input", () => {
+        const value = +slider.value;
+        this.graphVisualization.settingsManager.updateSetting(control.property, value);
+        this.handleSettingChange();
       });
+    });
+  }
+
+  handleSettingChange() {
+    const settings = this.graphVisualization.settingsManager.settings;
+    this.graphVisualization.renderer.updateSimulation(settings);
+    this.graphVisualization.renderer.updateVisualization(
+      this.graphVisualization.nodes,
+      this.graphVisualization.links,
+      DataUtils.createGroups(
+        this.graphVisualization.nodes.filter(n => !n.tags),
+        this.graphVisualization.nodes.filter(n => n.tags)
+      )
+    );
+  }
+
+  setupSearchBar() {
+    const searchBar = document.getElementById('search-bar');
+    searchBar.addEventListener('input', (event) => {
+      const searchTerm = event.target.value.toLowerCase();
+      this.graphVisualization.renderer.highlightNodes(searchTerm);
+    });
+  }
+
+  setupActionButtons() {
+    d3.select("#go-to-link").on("click", () => this.goToLink());
+    d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
+    d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
+    d3.select("#reset-defaults").on("click", () => this.resetToDefaults());
+  }
+
+  goToLink() {
+    if (this.graphVisualization.selectedNode && this.graphVisualization.selectedNode.url) {
+      window.open(this.graphVisualization.selectedNode.url, '_blank');
+    }
+  }
+
+  async removeSelectedBookmark() {
+    if (this.graphVisualization.selectedNode && this.graphVisualization.selectedNode.tags) {
+      try {
+        await this.graphVisualization.dataManager.removeBookmark(this.graphVisualization.selectedNode.id);
+        await this.graphVisualization.removeNodeFromVisualization(this.graphVisualization.selectedNode);
+      } catch (error) {
+        console.error("Error removing bookmark:", error);
+      }
+    }
+  }
+
+  async clearAllBookmarks() {
+    if (confirm("Are you sure you want to clear all bookmarks? This action cannot be undone.")) {
+      try {
+        await this.graphVisualization.dataManager.clearAll();
+        this.graphVisualization.nodes = [];
+        this.graphVisualization.links = [];
+        this.graphVisualization.renderer.updateVisualization([], [], []);
+        this.graphVisualization.sidebarManager.updateSidebar({});
+        this.graphVisualization.sidebarManager.updateActionButtons({});
+      } catch (error) {
+        console.error("Error clearing bookmarks:", error);
+      }
+    }
+  }
+
+  resetToDefaults() {
+    this.graphVisualization.settingsManager.resetToDefaults();
+    this.graphVisualization.settingsManager.updateSliderPositions();
+    
+    // Update the renderer with new settings and redraw
+    this.graphVisualization.renderer.updateSettingsAndRedraw(this.graphVisualization.settingsManager.settings);
   }
 
   nodeClicked(d) {
-    this.selectedNode = d;
-    this.updateSidebar(d);
-    this.updateActionButtons(d);
+    this.graphVisualization.selectedNode = d;
+    this.graphVisualization.sidebarManager.updateSidebar(d);
+    this.graphVisualization.sidebarManager.updateActionButtons(d);
+  }
+
+  setupDragBehavior() {
+    return d3.drag()
+      .on("start", (event, d) => this.dragstarted(event, d))
+      .on("drag", (event, d) => this.dragged(event, d))
+      .on("end", (event, d) => this.dragended(event, d));
+  }
+
+  setupZoomBehavior() {
+    return d3.zoom().on("zoom", (event) => {
+      this.graphVisualization.renderer.container.attr("transform", event.transform);
+    });
+  }
+
+  dragstarted(event, d) {
+    if (!event.active) this.graphVisualization.renderer.simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  dragended(event, d) {
+    if (!event.active) this.graphVisualization.renderer.simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+}
+
+class SettingsManager {
+  constructor() {
+    this.settings = {
+      nodeSize: 10,
+      linkSize: 2,
+      textSize: 12, 
+      charge: -200,
+      linkDistance: 50,
+      collisionStrength: 0.5,
+      gravityStrength: 0.1,
+      alpha: 1,
+      alphaDecay: 0.0228,
+      alphaMin: 0.001,
+      velocityDecay: 0.4
+    };
+    this.defaultSettings = { ...this.settings };
+  }
+
+  async loadSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get('forceSettings', (result) => {
+        if (result.forceSettings) {
+          this.settings = { ...this.settings, ...result.forceSettings };
+        }
+        this.updateSliderPositions();
+        resolve();
+      });
+    });
+  }
+
+  saveSettings() {
+    chrome.storage.local.set({ forceSettings: this.settings }, () => {
+      console.log("Force settings saved:", this.settings);
+    });
+    this.updateSliderPositions();
+  }
+
+  updateSetting(key, value) {
+    this.settings[key] = value;
+    this.saveSettings();
+  }
+
+  resetToDefaults() {
+    this.settings = { ...this.defaultSettings };
+    this.saveSettings();
+    this.updateSliderPositions();
+  }
+
+  updateSliderPositions() {
+    Object.entries(this.settings).forEach(([key, value]) => {
+      const slider = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
+      if (slider) {
+        slider.value = value;
+      }
+    });
+  }
+}
+
+class SidebarManager {
+  constructor(graphVisualization) {
+    this.graphVisualization = graphVisualization;
   }
 
   async updateSidebar(node) {
@@ -583,7 +570,7 @@ class GraphVisualization {
   
     if (node.tags) {  // It's a site node
       try {
-        const snapshot = await this.dataManager.getSnapshot(node.id);
+        const snapshot = await this.graphVisualization.dataManager.getSnapshot(node.id);
         if (snapshot) {
           snapshotViewer.html(`
             <div class="snapshot-container">
@@ -593,7 +580,6 @@ class GraphVisualization {
           `);
           this.setupSnapshotResize();
         } else {
-          // Use favicon as a small thumbnail if snapshot is not available
           snapshotViewer.html(`
             <div style="text-align: center; padding: 20px;">
               <img src="${node.favicon}" alt="Site favicon" style="width:32px; height:32px;">
@@ -625,77 +611,6 @@ class GraphVisualization {
     }
   }
 
-  setupTagEditor(node) {
-    const tagContainer = document.getElementById('tag-container');
-    const tagInput = document.getElementById('tag-input');
-  
-    if (!node.tags) {
-      node.tags = [];
-    }
-
-    this.renderTags(node, tagContainer);
-  
-    tagInput.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const newTag = tagInput.value.trim();
-        if (newTag && !node.tags.includes(newTag)) {
-          node.tags.push(newTag);
-          try {
-            await this.updateNodeTags(node);
-            this.renderTags(node, tagContainer);
-            tagInput.value = '';
-            
-            // Update the graph
-            await this.loadBookmarksData();
-          } catch (error) {
-            console.error("Error updating tags:", error);
-            // Optionally, show an error message to the user
-          }
-        }
-      }
-    });
-  }
-
-  renderTags(node, container) {
-    container.innerHTML = '';
-    node.tags.forEach(tag => {
-      const tagElement = document.createElement('span');
-      tagElement.classList.add('tag');
-      tagElement.textContent = tag;
-      const removeButton = document.createElement('span');
-      removeButton.classList.add('tag-remove');
-      removeButton.textContent = '×';
-      removeButton.onclick = async () => {
-        node.tags = node.tags.filter(t => t !== tag);
-        await this.updateNodeTags(node);
-        this.renderTags(node, container);
-      };
-      tagElement.appendChild(removeButton);
-      container.appendChild(tagElement);
-    });
-  }
-
-  async updateNodeTags(node) {
-    try {
-      await this.dataManager.updateBookmark(node.id, { tags: node.tags });
-      const data = await this.dataManager.loadData();
-      const tags = data.spaces[0].tags || [];
-      const sites = data.spaces[0].sites || [];
-      
-      this.tagMap = new Map(tags.map(tag => [tag.name.toLowerCase(), tag]));
-      this.nodes = [...tags, ...sites];
-      this.links = this.createLinks(sites);
-      const groups = this.createGroups(tags, sites);
-
-      this.updateVisualization(groups);
-    } catch (error) {
-      console.error("Error updating bookmark tags:", error);
-      throw error; // Re-throw the error so it can be caught by the caller
-    }
-  }
-
-
   setupSnapshotResize() {
     const resizeButton = document.querySelector('.snapshot-resize');
     const snapshotContainer = document.querySelector('.snapshot-container');
@@ -726,6 +641,54 @@ class GraphVisualization {
     });
   }
 
+  async setupTagEditor(node) {
+    const tagContainer = document.getElementById('tag-container');
+    const tagInput = document.getElementById('tag-input');
+
+    if (!node.tags) {
+      node.tags = [];
+    }
+
+    await this.renderTags(node, tagContainer);
+
+    tagInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const newTag = tagInput.value.trim();
+        if (newTag && !node.tags.some(tag => tag.toLowerCase() === newTag.toLowerCase())) {
+          node.tags.push(newTag);
+          try {
+            await this.graphVisualization.updateNodeTags(node);
+            await this.renderTags(node, tagContainer);
+            tagInput.value = '';
+          } catch (error) {
+            console.error("Error updating tags:", error);
+          }
+        }
+      }
+    });
+  }
+
+  async renderTags(node, container) {
+    container.innerHTML = '';
+    const space = (await this.graphVisualization.dataManager.loadData()).spaces[0];
+    node.tags.forEach(tagName => {
+      const tagElement = document.createElement('span');
+      tagElement.classList.add('tag');
+      tagElement.textContent = tagName;
+      const removeButton = document.createElement('span');
+      removeButton.classList.add('tag-remove');
+      removeButton.textContent = '×';
+      removeButton.onclick = async () => {
+        node.tags = node.tags.filter(t => t !== tagName);
+        await this.graphVisualization.updateNodeTags(node);
+        await this.renderTags(node, container);
+      };
+      tagElement.appendChild(removeButton);
+      container.appendChild(tagElement);
+    });
+  }
+
   updateActionButtons(node) {
     const goToLinkButton = d3.select("#go-to-link");
     const removeBookmarkButton = d3.select("#remove-bookmark");
@@ -739,75 +702,37 @@ class GraphVisualization {
     }
   }
 
-  goToLink() {
-    if (this.selectedNode && this.selectedNode.url) {
-      window.open(this.selectedNode.url, '_blank');
-    }
-  }
-
-  async removeSelectedBookmark() {
-    if (this.selectedNode && this.selectedNode.tags) {  // Check if it's a site node
-      try {
-        await this.dataManager.removeBookmark(this.selectedNode.id);
-        this.nodes = this.nodes.filter(node => node.id !== this.selectedNode.id);
-        this.links = this.links.filter(link => link.source.id !== this.selectedNode.id && link.target.id !== this.selectedNode.id);
-        
-        // Recalculate groups
-        const tags = this.nodes.filter(node => !node.tags);
-        const sites = this.nodes.filter(node => node.tags);
-        const groups = this.createGroups(tags, sites);
-        
-        this.selectedNode = null;
-        this.updateVisualization(groups);
-      } catch (error) {
-        console.error("Error removing bookmark:", error);
-      }
-    }
-  }
-
   getAssociatedSitesCount(tagNode) {
-    return this.nodes.filter(node => node.tags && node.tags.includes(tagNode.name)).length;
-  }
-
-  async checkAndShowWelcomeScreen() {
-    chrome.storage.local.get(['showWelcomeScreen'], (result) => {
-      if (result.showWelcomeScreen) {
-        this.displayWelcomeScreen();
-        // Set the flag to false after showing the welcome screen
-        chrome.storage.local.set({ showWelcomeScreen: false });
-      }
-    });
-  }
-
-  displayWelcomeScreen() {
-    const welcomeScreen = document.createElement('div');
-    welcomeScreen.id = 'welcome-screen';
-    welcomeScreen.innerHTML = `
-      <div class="welcome-content">
-        <h2>Welcome to WebGraph!</h2>
-        <p>Here's a quick guide to get you started:</p>
-        <ul>
-          <li>Pan and zoom the graph using your mouse or touchpad</li>
-          <li>Click on nodes to view details in the sidebar</li>
-          <li>Drag nodes to rearrange the graph</li>
-          <li>Use the search bar to find specific nodes</li>
-          <li>Adjust graph settings in the left sidebar</li>
-          <li>Add bookmarks by browsing the web and hitting Ctrl + Shift + Y or Cmd + Shift + Y for MacOS</li>
-          <li>Add multiple tags to see a self-organising, semantic structure build up as you add more bookmarks</li>
-          <li>An example data set has been pre-loaded so you can get a feel for how the graph can look</li>
-          <li>Click "Clear All Bookmarks" to begin your own graph!</li>
-        </ul>
-        <button id="close-welcome">Got it, let's start!</button>
-      </div>
-    `;
-    document.body.appendChild(welcomeScreen);
-
-    document.getElementById('close-welcome').addEventListener('click', () => {
-      welcomeScreen.style.display = 'none';
-      this.showWelcomeScreen = false;
-    });
+    return this.graphVisualization.nodes.filter(node => node.tags && node.tags.includes(tagNode.name)).length;
   }
 }
 
-// Initialize the graph
+const DataUtils = {
+  createLinks(sites, tagMap) {
+    const links = [];
+    sites.forEach(site => {
+      if (site.tags) {
+        site.tags.forEach(tagName => {
+          const lowercaseTagName = tagName.toLowerCase();
+          if (tagMap.has(lowercaseTagName)) {
+            links.push({ source: site.id, target: tagMap.get(lowercaseTagName).id });
+          } else {
+            console.warn(`Tag with name "${tagName}" not found for site ${site.id}`);
+          }
+        });
+      } else {
+        console.warn(`No tags found for site ${site.id}`);
+      }
+    });
+    return links;
+  },
+
+  createGroups(tags, sites) {
+    return tags.map(tag => ({
+      id: tag.id,
+      nodes: [tag, ...sites.filter(site => site.tags && site.tags.map(t => t.toLowerCase()).includes(tag.name.toLowerCase()))]
+    }));
+  }
+};
+
 const graph = new GraphVisualization("#graph");
