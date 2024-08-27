@@ -641,25 +641,25 @@ class SidebarManager {
     });
   }
 
-  setupTagEditor(node) {
+  async setupTagEditor(node) {
     const tagContainer = document.getElementById('tag-container');
     const tagInput = document.getElementById('tag-input');
-  
+
     if (!node.tags) {
       node.tags = [];
     }
 
-    this.renderTags(node, tagContainer);
-  
+    await this.renderTags(node, tagContainer);
+
     tagInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         const newTag = tagInput.value.trim();
-        if (newTag && !node.tags.includes(newTag)) {
+        if (newTag && !node.tags.some(tag => tag.toLowerCase() === newTag.toLowerCase())) {
           node.tags.push(newTag);
           try {
             await this.graphVisualization.updateNodeTags(node);
-            this.renderTags(node, tagContainer);
+            await this.renderTags(node, tagContainer);
             tagInput.value = '';
           } catch (error) {
             console.error("Error updating tags:", error);
@@ -669,19 +669,20 @@ class SidebarManager {
     });
   }
 
-  renderTags(node, container) {
+  async renderTags(node, container) {
     container.innerHTML = '';
-    node.tags.forEach(tag => {
+    const space = (await this.graphVisualization.dataManager.loadData()).spaces[0];
+    node.tags.forEach(tagName => {
       const tagElement = document.createElement('span');
       tagElement.classList.add('tag');
-      tagElement.textContent = tag;
+      tagElement.textContent = tagName;
       const removeButton = document.createElement('span');
       removeButton.classList.add('tag-remove');
       removeButton.textContent = '×';
       removeButton.onclick = async () => {
-        node.tags = node.tags.filter(t => t !== tag);
+        node.tags = node.tags.filter(t => t !== tagName);
         await this.graphVisualization.updateNodeTags(node);
-        this.renderTags(node, container);
+        await this.renderTags(node, container);
       };
       tagElement.appendChild(removeButton);
       container.appendChild(tagElement);
