@@ -6,6 +6,7 @@ class DataManager {
     this.data = null;
   }
 
+  // Initialize the IndexedDB database
   async initDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
@@ -24,6 +25,7 @@ class DataManager {
     });
   }
 
+  // Load initial data from a JSON file
   async loadInitialData() {
     try {
       const response = await fetch(chrome.runtime.getURL('data/bookmarks.json'));
@@ -37,6 +39,7 @@ class DataManager {
     }
   }
 
+  // Load data from chrome.storage.local or initialize if not present
   async loadData() {
     try {
       await this.initDB();
@@ -62,6 +65,7 @@ class DataManager {
     }
   }
 
+  // Save data to chrome.storage.local
   async saveData() {
     return new Promise((resolve, reject) => {
       console.log("Attempting to save data to chrome.storage.local");
@@ -168,6 +172,7 @@ class DataManager {
     return newId;
   }
 
+  // Remove tags that are not associated with any bookmarks
   removeOrphanedTags(space) {
     const usedTags = new Set(space.sites.flatMap(site => site.tags.map(tag => tag.toLowerCase())));
     space.tags = space.tags.filter(tag => usedTags.has(tag.name.toLowerCase()));
@@ -268,6 +273,7 @@ class DataManager {
       await this.clearAllSnapshots();
     }
   
+    // Clear all snapshots from IndexedDB
     async clearAllSnapshots() {
       return new Promise((resolve, reject) => {
         const transaction = this.db.transaction(['snapshots'], 'readwrite');

@@ -1,5 +1,8 @@
 import DataManager from '../utils/DataManager.js';
 
+// Main class for graph visualisation
+// Manages the overall structure of the graph, including data loading,
+// node interactions, and coordination between other components
 class GraphVisualization {
   constructor(element) {
     this.element = element;
@@ -132,6 +135,8 @@ class GraphVisualization {
   }
 }
 
+// Handles rendering of the graph
+// Responsible for creating and updating the visual representation of the graph
 class GraphRenderer {
   constructor(element, graphVisualization) {
     this.graphVisualization = graphVisualization;
@@ -363,6 +368,9 @@ class GraphRenderer {
   }
 }
 
+// Handles user interactions with the graph
+// Manages user input events, such as clicks, drags, and control adjustments
+// Updates the graph visualisation based on user actions
 class InteractionHandler {
   constructor(graphVisualization) {
     this.graphVisualization = graphVisualization;
@@ -509,6 +517,9 @@ class InteractionHandler {
   }
 }
 
+// Manages graph settings
+// Handles loading, saving, and resetting of graph visualisation parameters
+// Provides methods for updating individual settings and applying changes to the graph
 class SettingsManager {
   constructor() {
     this.settings = {
@@ -550,6 +561,7 @@ class SettingsManager {
     this.saveSettings();
   }
 
+  // Reset settings to default values
   resetToDefaults() {
     this.settings = { ...this.defaultSettings };
     this.saveSettings();
@@ -566,6 +578,9 @@ class SettingsManager {
   }
 }
 
+// Manages sidebar content and interactions
+// Responsible for updating the sidebar with node information,
+// handling tag editing, and managing action buttons
 class SidebarManager {
   constructor(graphVisualization) {
     this.graphVisualization = graphVisualization;
@@ -722,6 +737,9 @@ class SidebarManager {
   }
 }
 
+// Utility functions for data processing
+// Provides static methods for creating links between nodes
+// and grouping nodes based on tags
 const DataUtils = {
   createLinks(sites, tagMap) {
     const links = [];

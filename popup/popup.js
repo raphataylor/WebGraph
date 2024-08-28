@@ -2,6 +2,7 @@ import DataManager from '../utils/DataManager.js';
 
 const dataManager = new DataManager();
 
+// Wait for the DOM to be fully loaded before executing the main functionality
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('bookmarkForm');
   const openVisualizationButton = document.getElementById('openVisualization');
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('url').value = currentTab.url;
   });
 
+  // Add event listener for tag input
   tagInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -28,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Function to render tags in the UI
   function renderTags() {
     tagContainer.innerHTML = '';
     tags.forEach(tag => {
@@ -46,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Add event listener for form submission
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -79,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log("Bookmark object created:", bookmark);
 
+    // Add the bookmark using DataManager
     try {
       const newBookmark = await dataManager.addBookmark(bookmark);
       console.log("Bookmark added successfully:", newBookmark);
@@ -89,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Add event listener for opening visualization
   openVisualizationButton.addEventListener('click', function() {
     chrome.tabs.create({url: chrome.runtime.getURL('visualization/GraphVisualization.html')});
   });
