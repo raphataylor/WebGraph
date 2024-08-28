@@ -170,10 +170,10 @@ class GraphRenderer {
     this.simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(settings.gravityStrength))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(settings.collisionStrength))
-      .force("x", d3.forceX(width / 2).strength(settings.xyForceStrength))
-      .force("y", d3.forceY(height / 2).strength(settings.xyForceStrength))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5))
+      .force("x", d3.forceX(width / 2).strength(settings.gravityStrength))
+      .force("y", d3.forceY(height / 2).strength(settings.gravityStrength))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -207,10 +207,10 @@ class GraphRenderer {
     this.simulation
       .force("link", d3.forceLink().id(d => d.id).distance(settings.linkDistance))
       .force("charge", d3.forceManyBody().strength(settings.charge))
-      .force("center", d3.forceCenter(this.width / 2, this.height / 2).strength(settings.gravityStrength))
-      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5).strength(settings.collisionStrength))
-      .force("x", d3.forceX(this.width / 2).strength(settings.xyForceStrength))
-      .force("y", d3.forceY(this.height / 2).strength(settings.xyForceStrength))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2))
+      .force("collision", d3.forceCollide().radius(settings.nodeSize * 1.5))
+      .force("x", d3.forceX(this.width / 2).strength(settings.gravityStrength))
+      .force("y", d3.forceY(this.height / 2).strength(settings.gravityStrength))
       .alpha(settings.alpha)
       .alphaDecay(settings.alphaDecay)
       .alphaMin(settings.alphaMin)
@@ -381,13 +381,11 @@ class InteractionHandler {
       { id: "text-size", property: "textSize" },
       { id: "charge", property: "charge" },
       { id: "link-distance", property: "linkDistance" },
-      { id: "collision-strength", property: "collisionStrength" },
       { id: "gravity-strength", property: "gravityStrength" },
       { id: "alpha", property: "alpha" },
       { id: "alpha-decay", property: "alphaDecay" },
       { id: "alpha-min", property: "alphaMin" },
       { id: "velocity-decay", property: "velocityDecay" },
-      { id: "xy-force-strength", property: "xyForceStrength" }
     ];
 
     controls.forEach(control => {
@@ -514,13 +512,11 @@ class SettingsManager {
       textSize: 12,
       charge: -350,
       linkDistance: 30,
-      collisionStrength: 0.7,
-      gravityStrength: 0.1,
+      gravityStrength: 0.05,
       alpha: 1,
       alphaDecay: 0.0228,
       alphaMin: 0.001,
-      velocityDecay: 0.4,
-      xyForceStrength: 0.05
+      velocityDecay: 0.4
     };
     this.defaultSettings = { ...this.settings };
   }
@@ -573,7 +569,16 @@ class SidebarManager {
   async updateSidebar(node) {
     const snapshotViewer = d3.select("#snapshot-viewer");
     const notesViewer = d3.select("#notes-viewer");
-  
+
+    // Clear previous content
+    snapshotViewer.html("");
+    notesViewer.html("");
+
+    if (!node || Object.keys(node).length === 0) {
+      // No node selected, leave sidebar blank
+      return;
+    }
+
     if (node.tags) {  // It's a site node
       try {
         const snapshot = await this.graphVisualization.dataManager.getSnapshot(node.id);
@@ -597,7 +602,7 @@ class SidebarManager {
         console.error("Error fetching snapshot:", error);
         snapshotViewer.html(`<p>Error loading snapshot</p>`);
       }
-  
+
       notesViewer.html(`
         <h3>${node.title}</h3>
         <p><strong>URL:</strong> <a href="${node.url}" target="_blank">${node.url}</a></p>
@@ -611,8 +616,7 @@ class SidebarManager {
       `);
 
       this.setupTagEditor(node);
-    } else {  // It's a tag node
-      snapshotViewer.html("");
+    } else if (node.name) {  // It's a tag node
       notesViewer.html(`<h3>${node.name}</h3><p>Tag with ${this.getAssociatedSitesCount(node)} associated sites.</p>`);
     }
   }
