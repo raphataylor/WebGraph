@@ -425,6 +425,11 @@ class InteractionHandler {
     d3.select("#remove-bookmark").on("click", () => this.removeSelectedBookmark());
     d3.select("#clear-all-bookmarks").on("click", () => this.clearAllBookmarks());
     d3.select("#reset-defaults").on("click", () => this.resetToDefaults());
+    d3.select("#refresh-button").on("click", () => this.refreshPage());
+  }
+
+  refreshPage() {
+    window.location.reload();
   }
 
   goToLink() {
