@@ -1,11 +1,10 @@
 Data Privacy Policy for WebGraph
 
-This policy outlines how your data is handled when you use our Chrome extension.
+This policy outlines how your data is handled when you use my Chrome extension.
 
 1. **Local Storage:** All data associated with WebGraph is stored locally on your device:
-    - Your bookmarks, tags, and associated notes
+    - Your bookmarks, tags, and associated data
     - Snapshots of saved web pages
-    - Extension settingsThis data resides exclusively within your browser's storage. WebGraph's developers never access, transfer, or see this data.
 2. **No Tracking:** WebGraph does not track any of your activities, including:
     - Usage of the extension (e.g., searches, bookmarks, tag creation)
     - Websites visited or browsing history
