@@ -1,4 +1,7 @@
 # Development Project
+
+[View the Report](masters_project.docx.pdf)
+
 Repo for IT+ Development Project
 
 ![WebGraph](/assets/Demo1.png)
