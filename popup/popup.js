@@ -67,7 +67,9 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log("Snapshot compressed. New length:", snapshot.length);
       console.log("Compressed snapshot preview:", snapshot.substring(0, 100) + "...");
     } catch (error) {
-      console.error("Failed to capture or compress snapshot:", error);
+      const errorMessage = error.message || error;
+      console.error("Failed to capture or compress snapshot:", errorMessage);
+      alert('Error adding bookmark: ' + errorMessage); // Also update the alert if desired
     }
 
     const bookmark = {
@@ -104,8 +106,9 @@ async function captureSnapshot() {
   return new Promise((resolve, reject) => {
     chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
       if (chrome.runtime.lastError) {
-        console.error("Error in captureVisibleTab:", chrome.runtime.lastError);
-        reject(chrome.runtime.lastError);
+        const errorMessage = chrome.runtime.lastError.message || chrome.runtime.lastError;
+        console.error("Error in captureVisibleTab:", errorMessage);
+        reject(errorMessage); // Reject with the actual message string
       } else {
         console.log("Tab captured successfully");
         resolve(dataUrl);
