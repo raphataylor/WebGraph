@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add event listener for form submission
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
-    await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+
     const url = document.getElementById('url').value;
     const favicon = `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}`;
 
